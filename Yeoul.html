@@ -1434,6 +1434,155 @@
         border-color: rgba(255, 255, 255, 0.12);
       }
 
+      /* 하단 인스타그램 스타일 가로 스크롤 추천 친구 박스 */
+      .suggested-friends-section {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 8px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .suggested-friends-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 2px;
+      }
+
+      .suggested-all-link {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: color 0.15s ease;
+      }
+
+      .suggested-all-link:hover {
+        color: #FFFFFF;
+      }
+
+      .suggested-friends-carousel {
+        display: flex;
+        align-items: stretch;
+        gap: 10px;
+        overflow-x: auto;
+        padding: 2px 2px 8px;
+        scrollbar-width: none;
+        scroll-snap-type: x mandatory;
+      }
+
+      .suggested-friends-carousel::-webkit-scrollbar {
+        display: none;
+      }
+
+      .suggested-friend-card {
+        width: 136px;
+        flex-shrink: 0;
+        background: var(--bg-card);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 18px;
+        padding: 14px 10px 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        position: relative;
+        scroll-snap-align: start;
+        transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease;
+      }
+
+      .suggested-friend-card:hover {
+        border-color: rgba(255, 255, 255, 0.12);
+      }
+
+      .suggested-friend-card:active {
+        transform: scale(0.98);
+      }
+
+      .btn-dismiss-suggest {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        color: var(--text-muted);
+        opacity: 0.6;
+        border-radius: 50%;
+        transition: opacity 0.15s ease, color 0.15s ease;
+      }
+
+      .btn-dismiss-suggest:hover {
+        opacity: 1;
+        color: #FFFFFF;
+      }
+
+      .suggested-card-avatar {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: var(--bg-sub);
+        border: 1.5px solid rgba(255, 255, 255, 0.14);
+        margin-top: 4px;
+        margin-bottom: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      }
+
+      .suggested-card-name {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-main);
+        letter-spacing: -0.01em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+      }
+
+      .suggested-card-sub {
+        font-size: 11px;
+        color: var(--text-muted);
+        line-height: 1.25;
+        margin-top: 3px;
+        margin-bottom: 11px;
+        height: 28px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        word-break: keep-all;
+      }
+
+      .btn-suggest-follow {
+        width: 100%;
+        padding: 7px 0;
+        border-radius: 999px;
+        font-size: 11.5px;
+        font-weight: 700;
+        background: #FFFFFF;
+        color: #0A0A0A;
+        border: 1px solid #FFFFFF;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        transition: all 0.15s ease;
+      }
+
+      .btn-suggest-follow:hover {
+        background: var(--accent-hover);
+      }
+
+      .btn-suggest-follow.following {
+        background: var(--bg-sub);
+        color: var(--text-sub);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: none;
+      }
+
       .dm-thread-left {
         display: flex;
         align-items: center;
@@ -2331,10 +2480,19 @@
             <button type="submit" class="friend-search-submit">추가</button>
           </form>
 
-          <!-- 3. 친구 목록 영역 -->
+          <!-- 3. 친구 목록 영역 (동행자 리스트 + 하단 가로 인스타 추천 친구 박스) -->
           <div class="my-section-card" id="myFriendsSection">
-            <div class="my-section-title">동행자 및 추천 친구</div>
+            <div class="my-section-title">함께한 동행자</div>
             <div class="companion-follow-list" id="myFriendFollowList"></div>
+
+            <!-- 하단 인스타그램 스타일 가로 스크롤 추천 친구 박스 -->
+            <div class="suggested-friends-section">
+              <div class="suggested-friends-head">
+                <span class="my-section-title">회원님을 위한 추천 친구</span>
+                <span class="suggested-all-link">모두 보기</span>
+              </div>
+              <div class="suggested-friends-carousel" id="suggestedFriendsCarousel"></div>
+            </div>
           </div>
 
           <!-- 4. 최근 메시지 (DM) 영역 -->
@@ -2595,28 +2753,48 @@
         handle: '@hyun_seo',
         sub: '프라하 동행 · 사진 6장',
         avatar: AVATAR_URLS.hyun_seo,
-        following: true
+        following: true,
+        isCompanion: true
       },
       {
         name: '송민경',
         handle: '@min_kyung',
         sub: '프라하 동행 · 사진 7장',
         avatar: AVATAR_URLS.min_kyung,
-        following: true
+        following: true,
+        isCompanion: true
       },
       {
         name: '박성희',
         handle: '@seong_hee',
-        sub: '함께 아는 친구',
+        sub: '함께 아는 친구 5명',
         avatar: AVATAR_URLS.seong_hee,
-        following: false
+        following: false,
+        isCompanion: false
       },
       {
         name: '이산하',
         handle: '@san_ha',
-        sub: '함께 아는 친구',
+        sub: '최현서 님이 팔로우함',
         avatar: AVATAR_URLS.san_ha,
-        following: false
+        following: false,
+        isCompanion: false
+      },
+      {
+        name: '강도윤',
+        handle: '@doyun_k',
+        sub: '회원님을 위한 추천',
+        avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=160&h=160&q=80',
+        following: false,
+        isCompanion: false
+      },
+      {
+        name: '정유진',
+        handle: '@yujin_travel',
+        sub: '체코 프라하 여행 중',
+        avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=160&h=160&q=80',
+        following: false,
+        isCompanion: false
       }
     ];
 
@@ -3267,30 +3445,86 @@
     }
 
     function renderAllCompanionLists() {
-      const html = COMPANION_USERS.map((u, idx) => `
-        <div class="companion-follow-item">
-          <div class="companion-user-left">
-            <img class="companion-user-avatar" src="${u.avatar}" alt="${u.name}">
-            <div>
-              <div class="companion-user-name">${u.name}</div>
-              <div class="companion-user-sub">${u.sub}</div>
+      // 1. 함께한 동행자 목록 (상단 수직 리스트)
+      const companions = COMPANION_USERS.filter((u) => u.isCompanion);
+      const companionHtml = companions.map((u) => {
+        const idx = COMPANION_USERS.indexOf(u);
+        return `
+          <div class="companion-follow-item">
+            <div class="companion-user-left">
+              <img class="companion-user-avatar" src="${u.avatar}" alt="${u.name}">
+              <div>
+                <div class="companion-user-name">${u.name}</div>
+                <div class="companion-user-sub">${u.sub}</div>
+              </div>
             </div>
+            <button type="button" class="btn-follow-toggle ${u.following ? 'following' : ''}" onclick="toggleUserFollow(${idx})">
+              ${u.following ? '팔로잉' : '팔로우'}
+            </button>
           </div>
-          <button type="button" class="btn-follow-toggle ${u.following ? 'following' : ''}" onclick="toggleUserFollow(${idx})">
-            ${u.following ? '팔로잉' : '팔로우'}
-          </button>
-        </div>
-      `).join('');
+        `;
+      }).join('');
 
       const sheetList = document.getElementById('companionFollowList');
-      if (sheetList) sheetList.innerHTML = html;
+      if (sheetList) {
+        sheetList.innerHTML = COMPANION_USERS.map((u, idx) => `
+          <div class="companion-follow-item">
+            <div class="companion-user-left">
+              <img class="companion-user-avatar" src="${u.avatar}" alt="${u.name}">
+              <div>
+                <div class="companion-user-name">${u.name}</div>
+                <div class="companion-user-sub">${u.sub}</div>
+              </div>
+            </div>
+            <button type="button" class="btn-follow-toggle ${u.following ? 'following' : ''}" onclick="toggleUserFollow(${idx})">
+              ${u.following ? '팔로잉' : '팔로우'}
+            </button>
+          </div>
+        `).join('');
+      }
 
       const myList = document.getElementById('myFriendFollowList');
-      if (myList) myList.innerHTML = html;
+      if (myList) myList.innerHTML = companionHtml;
+
+      // 2. 하단 인스타그램 스타일 가로 스크롤 추천 친구 박스 렌더링
+      renderSuggestedFriendsCarousel();
 
       const followingCount = COMPANION_USERS.filter((u) => u.following).length;
       const statEl = document.getElementById('myFriendStatCount');
       if (statEl) statEl.textContent = String(baseFriendCount + followingCount);
+    }
+
+    function renderSuggestedFriendsCarousel() {
+      const carousel = document.getElementById('suggestedFriendsCarousel');
+      if (!carousel) return;
+
+      const suggested = COMPANION_USERS.filter((u) => !u.isCompanion && !u.dismissed);
+      if (suggested.length === 0) {
+        carousel.innerHTML = `<div style="font-size: 12px; color: var(--text-muted); padding: 12px 6px;">새로운 추천 친구가 없습니다.</div>`;
+        return;
+      }
+
+      carousel.innerHTML = suggested.map((u) => {
+        const idx = COMPANION_USERS.indexOf(u);
+        return `
+          <div class="suggested-friend-card" id="suggestCard_${idx}">
+            <button type="button" class="btn-dismiss-suggest" onclick="dismissSuggestedUser(${idx})" aria-label="추천 닫기">✕</button>
+            <img class="suggested-card-avatar" src="${u.avatar}" alt="${u.name}">
+            <div class="suggested-card-name">${u.name}</div>
+            <div class="suggested-card-sub">${u.sub}</div>
+            <button type="button" class="btn-suggest-follow ${u.following ? 'following' : ''}" onclick="toggleUserFollow(${idx})">
+              ${u.following ? '팔로잉' : '팔로우'}
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function dismissSuggestedUser(idx) {
+      const user = COMPANION_USERS[idx];
+      if (!user) return;
+      user.dismissed = true;
+      renderSuggestedFriendsCarousel();
     }
 
     function toggleUserFollow(userIdx) {
@@ -3346,7 +3580,8 @@
         handle,
         sub: `${handle} · 새로 추가한 친구`,
         avatar: AVATAR_URLS.san_ha,
-        following: true
+        following: true,
+        isCompanion: true
       });
       input.value = '';
       document.getElementById('friendSearchBox').classList.remove('open');
