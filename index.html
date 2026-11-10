@@ -1,0 +1,4072 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>여울 — All Dark Polarsteps & Social Hub Edition</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/globe.gl"></script>
+  <style>
+    @layer reset, tokens, base, components;
+
+    @layer reset {
+      html, body, div, span, h1, h2, h3, p, button, input, figure, dialog, form, svg {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        background: none;
+        border: none;
+        cursor: pointer;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+      }
+      button:active {
+        transform: scale(0.97);
+      }
+      input {
+        font: inherit;
+        color: inherit;
+        background: none;
+        border: none;
+        outline: none;
+      }
+    }
+
+    @layer tokens {
+      :root {
+        /* 푸른끼를 완전히 제거한 순수 뉴트럴 블랙 & 차콜 다크 토큰 */
+        --bg-app: #0A0A0A;
+        --bg-card: #141414;
+        --bg-sub: #1F1F1F;
+        --border-dark: rgba(255, 255, 255, 0.05);
+        --border-subtle: rgba(255, 255, 255, 0.035);
+        --shadow-deep: 0 10px 30px rgba(0, 0, 0, 0.7);
+        --text-main: #F5F5F5;
+        --text-sub: #A3A3A3;
+        --text-muted: #737373;
+        --accent-white: #FFFFFF;
+        --accent-hover: #E5E5E5;
+        --heart-red: #FF3040;
+        --font-sans: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Malgun Gothic", sans-serif;
+      }
+    }
+
+    @layer base {
+      body {
+        background-color: #000000;
+        color: var(--text-main);
+        font-family: var(--font-sans);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+    }
+
+    @layer components {
+      /* 모바일 디바이스 프레임 */
+      .device-frame {
+        width: 400px;
+        height: 850px;
+        background: var(--bg-app);
+        border-radius: 52px;
+        border: 1px solid #262626;
+        box-shadow: 0 32px 90px rgba(0, 0, 0, 0.9), 0 0 0 6px #121212;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* 상단 상태바 */
+      .status-bar {
+        height: 42px;
+        padding: 0 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-main);
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 60;
+        pointer-events: none;
+      }
+
+      /* 메인 뷰포트 */
+      .viewport {
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+        background: var(--bg-app);
+      }
+
+      .screen {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-app);
+        transition: opacity 0.2s ease;
+      }
+
+      .screen.active {
+        opacity: 1;
+        pointer-events: auto;
+        z-index: 10;
+      }
+
+      /* =====================================================================
+         탭 1: [지구본] + Polarsteps 스타일 스토리 하이라이트 통합 바텀시트
+         ===================================================================== */
+      #screenGlobe {
+        background: var(--bg-app);
+      }
+
+      .globe-city-chips {
+        position: absolute;
+        top: 48px;
+        left: 16px;
+        right: 16px;
+        z-index: 20;
+        display: flex;
+        gap: 6px;
+      }
+
+      .city-chip {
+        padding: 8px 16px;
+        border-radius: 999px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-dark);
+        color: var(--text-sub);
+        font-size: 13.5px;
+        font-weight: 600;
+        transition: all 0.15s ease;
+      }
+
+      .city-chip.active,
+      .city-chip:hover:not(:disabled) {
+        background: #FFFFFF;
+        color: #0A0A0A;
+        border-color: #FFFFFF;
+      }
+
+      #globeContainer {
+        width: 398px;
+        height: 786px;
+        cursor: grab;
+      }
+
+      #globeContainer:active {
+        cursor: grabbing;
+      }
+
+      .globe-pin-host {
+        width: 0;
+        height: 0;
+        position: relative;
+        pointer-events: auto;
+      }
+
+      .globe-pin-anchor {
+        position: absolute;
+        left: 0;
+        top: 0;
+        transform: translate(-50%, -100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+      }
+
+      .globe-pin-frame {
+        width: 46px;
+        height: 46px;
+        border-radius: 13px;
+        border: 2px solid rgba(255, 255, 255, 0.72);
+        background: var(--bg-card);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.75);
+        overflow: hidden;
+        transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+      }
+
+      .globe-pin-anchor:hover .globe-pin-frame,
+      .globe-pin-anchor.active .globe-pin-frame {
+        transform: scale(1.1);
+        border: 2.5px solid #FFFFFF;
+        box-shadow: 0 0 18px rgba(255, 255, 255, 0.45), 0 8px 20px rgba(0, 0, 0, 0.85);
+      }
+
+      .globe-pin-frame img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .globe-pin-tail {
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 6px solid rgba(255, 255, 255, 0.72);
+        margin-top: -1px;
+      }
+
+      .globe-pin-anchor.active .globe-pin-tail {
+        border-top-color: #FFFFFF;
+      }
+
+      /* 알림 드로어 확장 시 배경 딤 & 블러 */
+      .globe-sheet-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.52);
+        backdrop-filter: blur(5px);
+        opacity: 0;
+        pointer-events: none;
+        z-index: 24;
+        transition: opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .globe-sheet-backdrop.active {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      /* 지구본 하단 인터랙티브 알림 드로어 (Peek View <-> Expanded) */
+      .globe-bottom-sheet {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 25;
+        background: rgba(16, 16, 16, 0.94);
+        backdrop-filter: blur(28px);
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 28px 28px 0 0;
+        box-shadow: 0 -14px 40px rgba(0, 0, 0, 0.88);
+        padding: 8px 18px 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-height: 212px;
+        overflow: hidden;
+        transition: max-height 0.38s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.25s ease, box-shadow 0.25s ease;
+      }
+
+      .globe-bottom-sheet.expanded {
+        max-height: 600px;
+        background: rgba(13, 13, 13, 0.98);
+        overflow-y: auto;
+        box-shadow: 0 -18px 48px rgba(0, 0, 0, 0.95);
+        scrollbar-width: none;
+      }
+
+      .globe-bottom-sheet.expanded::-webkit-scrollbar {
+        display: none;
+      }
+
+      .sheet-grabber-zone {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        padding: 3px 0 2px;
+        user-select: none;
+      }
+
+      .sheet-Grabber {
+        width: 36px;
+        height: 4px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.28);
+        transition: background-color 0.2s ease, transform 0.2s ease;
+      }
+
+      .sheet-grabber-zone:hover .sheet-Grabber {
+        background: rgba(255, 255, 255, 0.55);
+        transform: scaleX(1.12);
+      }
+
+      .drawer-peek-hint {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+      }
+
+      .globe-bottom-sheet.expanded .drawer-peek-hint {
+        display: none;
+      }
+
+      .globe-peek-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        flex-shrink: 0;
+      }
+
+      /* 원형 스토리 하이라이트 버블 바 */
+      .story-bubbles-bar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        overflow-x: auto;
+        padding: 2px 2px;
+        scrollbar-width: none;
+      }
+
+      .story-bubbles-bar::-webkit-scrollbar {
+        display: none;
+      }
+
+      .story-bubble-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+        cursor: pointer;
+      }
+
+      .story-bubble-ring {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        padding: 2px;
+        border: 1.5px solid rgba(255, 255, 255, 0.88);
+        background: var(--bg-card);
+        position: relative;
+        transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .story-bubble-item:hover .story-bubble-ring {
+        transform: scale(1.06);
+      }
+
+      .story-bubble-ring img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .story-bubble-name {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-sub);
+        max-width: 66px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .globe-summary-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding-top: 10px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .globe-card-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .globe-card-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-main);
+        letter-spacing: -0.01em;
+      }
+
+      .globe-card-meta {
+        font-size: 12px;
+        color: var(--text-sub);
+        margin-top: 3px;
+      }
+
+      .globe-card-btn {
+        padding: 11px 22px;
+        border-radius: 999px;
+        background: #FFFFFF;
+        color: #0A0A0A;
+        font-size: 14px;
+        font-weight: 700;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        flex-shrink: 0;
+      }
+
+      .globe-card-btn:hover:not(:disabled) {
+        background: var(--accent-hover);
+      }
+
+      /* 확장 상태: 친구들의 최근 여행 활동 및 알림 피드 드로어 */
+      .globe-activity-drawer {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .globe-bottom-sheet.expanded .globe-activity-drawer {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .globe-activity-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 2px 2px 0;
+      }
+
+      .globe-activity-title-group {
+        display: flex;
+        align-items: baseline;
+        gap: 7px;
+      }
+
+      .globe-activity-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-main);
+        letter-spacing: -0.01em;
+      }
+
+      .globe-activity-sub {
+        font-size: 11.5px;
+        color: var(--text-muted);
+      }
+
+      .globe-activity-count-badge {
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-sub);
+      }
+
+      .globe-activity-list {
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+        padding-bottom: 6px;
+      }
+
+      .activity-feed-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        border-radius: 17px;
+        transition: background-color 0.16s ease, border-color 0.16s ease;
+      }
+
+      .activity-feed-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.08);
+      }
+
+      .activity-feed-item:active {
+        transform: scale(0.985);
+      }
+
+      .activity-feed-left {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .activity-feed-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: var(--bg-sub);
+        flex-shrink: 0;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .activity-feed-content {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .activity-feed-text {
+        font-size: 12.5px;
+        line-height: 1.4;
+        color: var(--text-sub);
+        word-break: keep-all;
+      }
+
+      .activity-feed-user {
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .activity-feed-target {
+        color: #F5F5F5;
+        font-weight: 600;
+      }
+
+      .activity-feed-time {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 3px;
+      }
+
+      .btn-activity-action {
+        padding: 8px 16px;
+        border-radius: 999px;
+        background: #FFFFFF;
+        color: #0A0A0A;
+        font-size: 12.5px;
+        font-weight: 700;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+      }
+
+      .btn-activity-action:hover {
+        background: var(--accent-hover);
+      }
+
+      .btn-activity-action.following {
+        background: var(--bg-sub);
+        color: var(--text-sub);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: none;
+      }
+
+      /* =====================================================================
+         탭 2: [지도] 우측 상단 아바타 + 공유 아이콘 + 그룹 필터 & 소셜 카드
+         ===================================================================== */
+      .map-top-header {
+        padding: 44px 18px 10px;
+        background: rgba(10, 10, 10, 0.94);
+        backdrop-filter: blur(16px);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 40;
+        position: relative;
+        flex-shrink: 0;
+      }
+
+      .map-header-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-main);
+        letter-spacing: -0.02em;
+      }
+
+      .map-header-date {
+        font-size: 12px;
+        color: var(--text-sub);
+        margin-top: 2px;
+      }
+
+      .map-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .avatar-stack {
+        display: flex;
+        align-items: center;
+        padding: 2px;
+        border-radius: 999px;
+        transition: transform 0.15s ease;
+      }
+
+      .avatar-stack:hover {
+        transform: scale(1.04);
+      }
+
+      .avatar-circle {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 1.5px solid #0A0A0A;
+        overflow: hidden;
+        background: #262626;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .avatar-circle img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .avatar-circle.a2 {
+        margin-left: -9px;
+      }
+
+      /* 34x34px 원형 #1F1F1F 공유 아이콘 버튼 */
+      .btn-header-share {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #1F1F1F;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #FFFFFF;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.15s ease, transform 0.15s ease;
+      }
+
+      .btn-header-share:hover {
+        background: #2A2A2A;
+        transform: scale(1.04);
+      }
+
+      /* 지도를 타고 여행지 목록이 올라가는 통합 스크롤 컨테이너 */
+      .map-scroll-container {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        position: relative;
+        background: var(--bg-app);
+        scroll-behavior: smooth;
+        scrollbar-width: none;
+      }
+
+      .map-scroll-container::-webkit-scrollbar {
+        display: none;
+      }
+
+      /* 상단 70%를 차지하는 웜 다크 지도 영역 (sticky) */
+      .map-sticky-wrap {
+        position: sticky;
+        top: 0;
+        width: 100%;
+        height: 495px;
+        z-index: 1;
+        background: #121212;
+      }
+
+      #leafletMap {
+        width: 100%;
+        height: 100%;
+        background: #121212;
+      }
+
+      /* 프라하 도로와 강이 시원하게 보이는 웜 다크 지도 필터 */
+      .leaflet-tile-pane {
+        filter: grayscale(100%) sepia(10%) brightness(1.48) contrast(1.08);
+      }
+
+      .leaflet-control-attribution,
+      .leaflet-control-zoom {
+        display: none !important;
+      }
+
+      /* 다크 사진 핀 */
+      .map-photo-pin {
+        width: 52px;
+        height: 58px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        position: relative;
+      }
+
+      .map-pin-box {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        border: 2px solid rgba(255, 255, 255, 0.72);
+        background: var(--bg-card);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.75);
+        overflow: hidden;
+        transform-origin: bottom center;
+        transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+      }
+
+      .map-photo-pin.selected .map-pin-box {
+        border: 2.5px solid #FFFFFF;
+        transform: scale(1.12);
+        box-shadow: 0 0 18px rgba(255, 255, 255, 0.45), 0 10px 24px rgba(0, 0, 0, 0.85);
+      }
+
+      .map-pin-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .map-pin-tail {
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 7px solid rgba(255, 255, 255, 0.72);
+        margin-top: -1px;
+      }
+
+      .map-photo-pin.selected .map-pin-tail {
+        border-top-color: #FFFFFF;
+      }
+
+      /* 하단 30%에서 시작해 스크롤 시 지도를 덮으며 올라오는 시트 */
+      .story-feed-sheet {
+        position: relative;
+        z-index: 10;
+        margin-top: -24px;
+        background: var(--bg-app);
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 28px 28px 0 0;
+        box-shadow: 0 -16px 36px rgba(0, 0, 0, 0.85);
+        padding: 12px 18px 36px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        min-height: 540px;
+      }
+
+      /* 그룹 필터 칩 바 */
+      .group-filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        overflow-x: auto;
+        padding: 2px 0;
+        scrollbar-width: none;
+      }
+
+      .group-filter-bar::-webkit-scrollbar {
+        display: none;
+      }
+
+      .group-filter-chip {
+        padding: 8px 16px;
+        border-radius: 999px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-dark);
+        color: var(--text-sub);
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+        flex-shrink: 0;
+        transition: all 0.15s ease;
+      }
+
+      .group-filter-chip.active {
+        background: #FFFFFF;
+        color: #0A0A0A;
+        border-color: #FFFFFF;
+        font-weight: 700;
+      }
+
+      .story-feed-list {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      /* 장소별 사진 카드 (부드러운 다크 서피스 & 미세 보더) */
+      .story-magazine-card {
+        background: var(--bg-card);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        border-radius: 22px;
+        overflow: hidden;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+        cursor: pointer;
+        transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease, border-color 0.18s ease;
+        flex-shrink: 0;
+      }
+
+      .story-magazine-card:hover {
+        border-color: rgba(255, 255, 255, 0.08);
+      }
+
+      .story-magazine-card:active {
+        transform: scale(0.985);
+      }
+
+      .story-magazine-card.active {
+        border-color: rgba(255, 255, 255, 0.28);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6), 0 12px 32px rgba(0, 0, 0, 0.7);
+      }
+
+      .story-card-photo {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 10;
+        background: var(--bg-sub);
+        overflow: hidden;
+      }
+
+      .story-card-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      /* 같이 간 일행 태그 알약 배지 */
+      .companion-tag-pill {
+        position: absolute;
+        left: 12px;
+        bottom: 12px;
+        background: rgba(10, 10, 10, 0.72);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 999px;
+        padding: 6px 13px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-main);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: background-color 0.15s ease, transform 0.15s ease;
+      }
+
+      .companion-tag-pill:hover {
+        background: rgba(20, 20, 20, 0.92);
+        transform: scale(1.03);
+      }
+
+      .btn-gmap-link {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(10, 10, 10, 0.75);
+        backdrop-filter: blur(8px);
+        color: #FFFFFF;
+        font-size: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.15s ease, color 0.15s ease;
+      }
+
+      .btn-gmap-link:hover:not(:disabled) {
+        background: #FFFFFF;
+        color: #0A0A0A;
+      }
+
+      .story-card-body {
+        padding: 15px 16px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .story-title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .story-place-name {
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--text-main);
+        letter-spacing: -0.01em;
+      }
+
+      .story-day-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+      }
+
+      .story-memo-text {
+        font-size: 13px;
+        color: var(--text-sub);
+        line-height: 1.45;
+      }
+
+      .story-chip-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 2px;
+      }
+
+      .story-memo-chip {
+        background: var(--bg-sub);
+        color: var(--text-sub);
+        font-size: 12px;
+        padding: 6px 11px;
+        border-radius: 999px;
+      }
+
+      .story-memo-chip:hover:not(:disabled) {
+        background: #FFFFFF;
+        color: #0A0A0A;
+      }
+
+      /* 인라인 댓글 1줄 프리뷰 + 액션 바 */
+      .story-comment-preview {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 12px;
+        line-height: 1.4;
+        padding-top: 2px;
+        cursor: pointer;
+      }
+
+      .story-comment-line {
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: var(--text-sub);
+      }
+
+      .story-comment-user {
+        font-weight: 700;
+        color: var(--text-main);
+        margin-right: 6px;
+      }
+
+      .story-comment-more {
+        font-size: 11px;
+        color: var(--text-muted);
+        flex-shrink: 0;
+      }
+
+      .story-action-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 6px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .story-action-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .sns-action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-main);
+        padding: 6px 4px;
+        transition: transform 0.15s ease, color 0.15s ease;
+      }
+
+      .sns-action-btn:active {
+        transform: scale(0.9);
+      }
+
+      .sns-action-btn.liked {
+        color: var(--heart-red);
+      }
+
+      .sns-action-btn.liked svg {
+        fill: var(--heart-red);
+        stroke: var(--heart-red);
+        animation: heartPop 0.25s ease;
+      }
+
+      @keyframes heartPop {
+        0% { transform: scale(0.8); }
+        50% { transform: scale(1.22); }
+        100% { transform: scale(1); }
+      }
+
+      .btn-story-play {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.12);
+        color: var(--text-main);
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+      }
+
+      .btn-story-play:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.16);
+      }
+
+      .btn-story-play.playing {
+        background: #FFFFFF;
+        color: #0A0A0A;
+      }
+
+      /* =====================================================================
+         탭 3: [사진첩 탭] 다크 갤러리 UI
+         ===================================================================== */
+      .album-screen-inner {
+        padding: 52px 16px 16px;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .album-header-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+
+      .album-header-title {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .photo-grid-2col {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        overflow-y: auto;
+        padding-bottom: 16px;
+      }
+
+      .album-dark-card {
+        background: var(--bg-card);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        border-radius: 16px;
+        padding: 8px;
+        cursor: pointer;
+        transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+      }
+
+      .album-dark-card:hover {
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+
+      .album-dark-card:active {
+        transform: scale(0.98);
+      }
+
+      .album-dark-card.selected {
+        border: 2px solid #FFFFFF;
+        box-shadow: 0 0 16px rgba(255, 255, 255, 0.25);
+      }
+
+      .album-thumb-wrap {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        border-radius: 11px;
+        overflow: hidden;
+        background: var(--bg-sub);
+      }
+
+      .album-thumb-wrap img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .check-badge {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: rgba(10, 10, 10, 0.65);
+        border: 1.5px solid rgba(255, 255, 255, 0.6);
+        color: transparent;
+        font-size: 12px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .album-dark-card.selected .check-badge {
+        background: #FFFFFF;
+        border-color: #FFFFFF;
+        color: #0A0A0A;
+      }
+
+      .album-meta-line {
+        margin-top: 9px;
+        padding: 0 2px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-main);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .album-meta-time {
+        color: var(--text-sub);
+        font-weight: 500;
+      }
+
+      .floating-pill-cta {
+        margin-top: auto;
+        width: 100%;
+        padding: 16px 24px;
+        border-radius: 999px;
+        background: #FFFFFF;
+        color: #0A0A0A;
+        font-size: 15px;
+        font-weight: 700;
+        text-align: center;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        transition: background-color 0.15s ease, transform 0.15s ease;
+      }
+
+      .floating-pill-cta:hover:not(:disabled),
+      .floating-pill-cta:active:not(:disabled) {
+        background: var(--accent-hover);
+        transform: scale(0.98);
+      }
+
+      /* =====================================================================
+         탭 4: [마이] 페이지 — 인스타그램 감성의 극단적 미니멀 프로필 & 리스트
+         ===================================================================== */
+      .my-screen-inner {
+        padding: 50px 18px 26px;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        gap: 18px;
+        overflow-y: auto;
+        scrollbar-width: none;
+      }
+
+      .my-screen-inner::-webkit-scrollbar {
+        display: none;
+      }
+
+      /* 1. 상단 프로필 헤더 (불필요한 회색 사각 박스를 제거한 인스타 스타일) */
+      .my-profile-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 4px 2px;
+        flex-shrink: 0;
+      }
+
+      .my-avatar-60 {
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 1.5px solid rgba(255, 255, 255, 0.18);
+        background: var(--bg-sub);
+        flex-shrink: 0;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      }
+
+      .my-profile-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .my-name-line {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+      }
+
+      .my-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-main);
+        letter-spacing: -0.02em;
+      }
+
+      .my-handle {
+        font-size: 12.5px;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+
+      /* 인스타 스타일 1줄 스탯 라인 (도시 4 · 추억 16 · 친구 12) */
+      .my-stats-compact {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--text-sub);
+      }
+
+      .my-stats-compact strong {
+        color: #FFFFFF;
+        font-weight: 700;
+        margin-left: 2px;
+      }
+
+      .stat-bullet {
+        color: rgba(255, 255, 255, 0.22);
+        font-size: 11px;
+      }
+
+      /* 서브 탭 스위처 & + 친구 추가 버튼 */
+      .my-subtab-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+
+      .my-subtab-group {
+        display: flex;
+        background: var(--bg-card);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 999px;
+        padding: 3px;
+        gap: 3px;
+      }
+
+      .my-subtab-btn {
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-sub);
+      }
+
+      .my-subtab-btn.active {
+        background: #FFFFFF;
+        color: #0A0A0A;
+        font-weight: 700;
+      }
+
+      .btn-add-friend-pill {
+        padding: 8px 16px;
+        border-radius: 999px;
+        background: var(--bg-card);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: #FFFFFF;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .btn-add-friend-pill:hover {
+        background: var(--bg-sub);
+        border-color: rgba(255, 255, 255, 0.14);
+      }
+
+      /* 아이디로 친구 추가 검색 인풋 바 */
+      .friend-search-box {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        background: var(--bg-card);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 14px;
+        padding: 8px 10px 8px 14px;
+        flex-shrink: 0;
+      }
+
+      .friend-search-box.open {
+        display: flex;
+      }
+
+      .friend-search-input {
+        flex: 1;
+        min-width: 0;
+        font-size: 13px;
+        color: var(--text-main);
+      }
+
+      .friend-search-input::placeholder {
+        color: var(--text-muted);
+      }
+
+      .friend-search-submit {
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: #FFFFFF;
+        color: #0A0A0A;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      /* 친구 목록 & DM 목록 영역: 답답한 카드 테두리를 없애고 여백을 준 모던 리스트 */
+      .my-section-card {
+        background: transparent;
+        border: none;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        flex-shrink: 0;
+      }
+
+      .my-section-title {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--text-muted);
+        letter-spacing: -0.01em;
+        padding-left: 2px;
+      }
+
+      .companion-follow-list,
+      .dm-thread-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .companion-follow-item,
+      .dm-thread-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 13px 15px;
+        background: var(--bg-card);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        border-radius: 18px;
+        transition: transform 0.16s ease, background-color 0.16s ease, border-color 0.16s ease;
+      }
+
+      .companion-follow-item:hover,
+      .dm-thread-item:hover {
+        background: #181818;
+        border-color: rgba(255, 255, 255, 0.08);
+      }
+
+      .companion-follow-item:active,
+      .dm-thread-item:active {
+        transform: scale(0.985);
+      }
+
+      .companion-user-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
+
+      .companion-user-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: var(--bg-sub);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        flex-shrink: 0;
+      }
+
+      .companion-user-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .companion-user-sub {
+        font-size: 12px;
+        color: var(--text-sub);
+        margin-top: 2px;
+      }
+
+      .btn-follow-toggle {
+        padding: 8px 18px;
+        border-radius: 999px;
+        font-size: 12.5px;
+        font-weight: 700;
+        flex-shrink: 0;
+        background: #FFFFFF;
+        color: #0A0A0A;
+        border: 1px solid #FFFFFF;
+      }
+
+      .btn-follow-toggle.following {
+        background: var(--bg-sub);
+        color: var(--text-sub);
+        border-color: rgba(255, 255, 255, 0.12);
+      }
+
+      /* 하단 인스타그램 스타일 가로 스크롤 추천 친구 박스 */
+      .suggested-friends-section {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 8px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .suggested-friends-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 2px;
+      }
+
+      .suggested-all-link {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: color 0.15s ease;
+      }
+
+      .suggested-all-link:hover {
+        color: #FFFFFF;
+      }
+
+      .suggested-friends-carousel {
+        display: flex;
+        align-items: stretch;
+        gap: 10px;
+        overflow-x: auto;
+        padding: 2px 2px 8px;
+        scrollbar-width: none;
+        scroll-snap-type: x mandatory;
+      }
+
+      .suggested-friends-carousel::-webkit-scrollbar {
+        display: none;
+      }
+
+      .suggested-friend-card {
+        width: 136px;
+        flex-shrink: 0;
+        background: var(--bg-card);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 18px;
+        padding: 14px 10px 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        position: relative;
+        scroll-snap-align: start;
+        transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease;
+      }
+
+      .suggested-friend-card:hover {
+        border-color: rgba(255, 255, 255, 0.12);
+      }
+
+      .suggested-friend-card:active {
+        transform: scale(0.98);
+      }
+
+      .btn-dismiss-suggest {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        color: var(--text-muted);
+        opacity: 0.6;
+        border-radius: 50%;
+        transition: opacity 0.15s ease, color 0.15s ease;
+      }
+
+      .btn-dismiss-suggest:hover {
+        opacity: 1;
+        color: #FFFFFF;
+      }
+
+      .suggested-card-avatar {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: var(--bg-sub);
+        border: 1.5px solid rgba(255, 255, 255, 0.14);
+        margin-top: 4px;
+        margin-bottom: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      }
+
+      .suggested-card-name {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-main);
+        letter-spacing: -0.01em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+      }
+
+      .suggested-card-sub {
+        font-size: 11px;
+        color: var(--text-muted);
+        line-height: 1.25;
+        margin-top: 3px;
+        margin-bottom: 11px;
+        height: 28px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        word-break: keep-all;
+      }
+
+      .btn-suggest-follow {
+        width: 100%;
+        padding: 9px 0;
+        border-radius: 999px;
+        font-size: 12.5px;
+        font-weight: 700;
+        background: #FFFFFF;
+        color: #0A0A0A;
+        border: 1px solid #FFFFFF;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        transition: all 0.15s ease;
+      }
+
+      .btn-suggest-follow:hover {
+        background: var(--accent-hover);
+      }
+
+      .btn-suggest-follow.following {
+        background: var(--bg-sub);
+        color: var(--text-sub);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: none;
+      }
+
+      .dm-thread-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .dm-thread-info {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .dm-thread-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .dm-thread-preview {
+        font-size: 12.5px;
+        color: var(--text-sub);
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .dm-thread-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+
+      .dm-thread-time {
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+
+      .dm-unread-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #FFFFFF;
+      }
+
+      /* =====================================================================
+         전역 오버레이 모달들 (.viewport 직속 자식)
+         1) #storyViewerModal (풀스크린 스토리 뷰어)
+         2) #shareStudioModal (인스타 9:16 & 4:5 공유 스튜디오 모달)
+         3) #commentSheetOverlay (댓글 입력 드로어)
+         4) #companionSheetOverlay (동행자 팔로우 바텀시트)
+         5) #dmChatModal (1:1 다크 채팅 모달/드로어)
+         ===================================================================== */
+      .story-viewer-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 90;
+        background: #000000;
+        display: none;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .story-viewer-overlay.open {
+        display: flex;
+      }
+
+      .story-viewer-bg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .story-viewer-gradient {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.12) 35%, rgba(0,0,0,0.88) 100%);
+        pointer-events: none;
+      }
+
+      .story-viewer-top {
+        position: relative;
+        z-index: 2;
+        padding: 46px 14px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .story-progress-row {
+        display: flex;
+        gap: 5px;
+      }
+
+      .story-progress-seg {
+        flex: 1;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.28);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+
+      .story-progress-fill {
+        height: 100%;
+        background: #FFFFFF;
+        width: 0%;
+        transition: width 0.2s linear;
+      }
+
+      .story-viewer-userbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .story-viewer-meta {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+      }
+
+      .story-viewer-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 1.5px solid #FFFFFF;
+        object-fit: cover;
+        background: #262626;
+      }
+
+      .story-viewer-place {
+        font-size: 14px;
+        font-weight: 700;
+        color: #FFFFFF;
+      }
+
+      .story-viewer-sub {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.78);
+        margin-top: 1px;
+      }
+
+      .story-viewer-close {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.16);
+        color: #FFFFFF;
+        font-size: 14px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .story-viewer-nav {
+        position: relative;
+        z-index: 2;
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .story-viewer-bottom {
+        position: relative;
+        z-index: 2;
+        padding: 16px 14px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 11px;
+      }
+
+      .story-viewer-caption {
+        font-size: 15px;
+        font-weight: 600;
+        color: #FFFFFF;
+        line-height: 1.45;
+      }
+
+      .story-viewer-music-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .story-viewer-music {
+        background: rgba(255, 255, 255, 0.14);
+        backdrop-filter: blur(10px);
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #FFFFFF;
+      }
+
+      .story-reaction-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .story-reply-input {
+        flex: 1;
+        min-width: 0;
+        height: 38px;
+        padding: 0 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.14);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        color: #FFFFFF;
+        font-size: 12px;
+      }
+
+      .story-reply-input::placeholder {
+        color: rgba(255, 255, 255, 0.65);
+      }
+
+      .story-heart-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #FFFFFF;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .story-heart-btn.liked {
+        color: var(--heart-red);
+      }
+
+      .story-heart-btn.liked svg {
+        fill: var(--heart-red);
+        stroke: var(--heart-red);
+      }
+
+      .story-viewer-share-btn {
+        height: 38px;
+        background: #FFFFFF;
+        color: #0A0A0A;
+        padding: 0 13px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      /* 인스타 9:16 & 4:5 공유 카드 스튜디오 풀스크린 모달 (#shareStudioModal) */
+      .share-studio-modal {
+        position: absolute;
+        inset: 0;
+        z-index: 88;
+        background: var(--bg-app);
+        display: none;
+        flex-direction: column;
+        padding: 46px 16px 18px;
+        gap: 12px;
+      }
+
+      .share-studio-modal.open {
+        display: flex;
+      }
+
+      .share-studio-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .share-studio-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .format-switch {
+        display: flex;
+        background: var(--bg-card);
+        border: 1px solid var(--border-dark);
+        border-radius: 999px;
+        padding: 3px;
+        gap: 4px;
+      }
+
+      .format-btn {
+        padding: 5px 13px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-sub);
+      }
+
+      .format-btn.active {
+        background: #FFFFFF;
+        color: #0A0A0A;
+        font-weight: 700;
+      }
+
+      .share-card-stage {
+        flex: 1;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      .insta-dom-card {
+        position: relative;
+        width: 312px;
+        height: 552px;
+        border-radius: 24px;
+        overflow: hidden;
+        background: #0A0A0A;
+        border: 1px solid var(--border-dark);
+        color: #FFFFFF;
+        box-shadow: var(--shadow-deep);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 22px 18px;
+        transition: height 0.25s ease, width 0.25s ease;
+      }
+
+      .insta-dom-card.post-4-5 {
+        width: 336px;
+        height: 420px;
+      }
+
+      .insta-bg-img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.24;
+        filter: grayscale(35%) blur(6px) scale(1.06);
+        pointer-events: none;
+      }
+
+      .insta-bg-dim {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(10, 10, 10, 0.72) 0%, rgba(10, 10, 10, 0.94) 100%);
+        pointer-events: none;
+      }
+
+      .insta-top {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+      }
+
+      .insta-title {
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        color: #FFFFFF;
+      }
+
+      .insta-date {
+        font-size: 12px;
+        color: var(--text-sub);
+        margin-top: 2px;
+      }
+
+      .insta-companion-badge {
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 999px;
+        padding: 5px 10px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #FFFFFF;
+      }
+
+      .insta-route-map {
+        position: relative;
+        z-index: 2;
+        flex: 1;
+        margin: 10px 0;
+      }
+
+      .insta-route-svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      .insta-node {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        gap: 9px;
+      }
+
+      .insta-node-avatar {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        border: 2px solid #FFFFFF;
+        overflow: hidden;
+        background: var(--bg-sub);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.7);
+        flex-shrink: 0;
+      }
+
+      .insta-node-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .insta-node-label {
+        background: rgba(20, 20, 20, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        padding: 5px 10px;
+        border-radius: 8px;
+        color: #FFFFFF;
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      }
+
+      .insta-music-footer {
+        position: relative;
+        z-index: 2;
+        background: rgba(31, 31, 31, 0.76);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 14px;
+        padding: 11px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .insta-music-text {
+        font-size: 13px;
+        font-weight: 600;
+        color: #FFFFFF;
+      }
+
+      .insta-music-sub {
+        font-size: 11px;
+        color: var(--text-sub);
+      }
+
+      /* 바텀시트 모달 공통 */
+      .sheet-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 85;
+        background: rgba(0, 0, 0, 0.65);
+        backdrop-filter: blur(4px);
+        opacity: 0;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        transition: opacity 0.22s ease;
+      }
+
+      .sheet-overlay.open {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .bottom-modal-sheet {
+        width: 100%;
+        background: var(--bg-card);
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 26px 26px 0 0;
+        padding: 10px 18px 22px;
+        box-shadow: 0 -16px 40px rgba(0, 0, 0, 0.85);
+        transform: translateY(100%);
+        transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        max-height: 76%;
+      }
+
+      .sheet-overlay.open .bottom-modal-sheet {
+        transform: translateY(0);
+      }
+
+      .sheet-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .sheet-header-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .sheet-header-action {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-sub);
+      }
+
+      .sheet-header-action:hover {
+        color: #FFFFFF;
+      }
+
+      /* 댓글 드로어 내부 */
+      .comment-drawer-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        overflow-y: auto;
+        max-height: 260px;
+        padding: 4px 0;
+      }
+
+      .comment-drawer-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .comment-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: var(--bg-sub);
+        flex-shrink: 0;
+      }
+
+      .comment-body {
+        flex: 1;
+        min-width: 0;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .comment-author {
+        font-weight: 700;
+        color: var(--text-main);
+        margin-right: 6px;
+      }
+
+      .comment-text {
+        color: var(--text-sub);
+      }
+
+      .comment-input-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--bg-sub);
+        border: 1px solid var(--border-dark);
+        border-radius: 999px;
+        padding: 6px 8px 6px 14px;
+      }
+
+      .comment-input-field {
+        flex: 1;
+        min-width: 0;
+        font-size: 13px;
+        color: var(--text-main);
+      }
+
+      .comment-input-field::placeholder {
+        color: var(--text-muted);
+      }
+
+      .comment-submit-btn {
+        padding: 6px 13px;
+        border-radius: 999px;
+        background: #FFFFFF;
+        color: #0A0A0A;
+        font-size: 12px;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+
+      /* 1:1 DM 채팅 드로어 (#dmChatModal) */
+      .dm-chat-messages {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        overflow-y: auto;
+        max-height: 280px;
+        padding: 6px 0;
+      }
+
+      .dm-bubble-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+      }
+
+      .dm-bubble-row.me {
+        justify-content: flex-end;
+      }
+
+      .dm-bubble {
+        max-width: 75%;
+        padding: 9px 13px;
+        border-radius: 16px;
+        font-size: 13px;
+        line-height: 1.4;
+        background: var(--bg-sub);
+        color: var(--text-main);
+      }
+
+      .dm-bubble-row.me .dm-bubble {
+        background: #FFFFFF;
+        color: #0A0A0A;
+        font-weight: 600;
+      }
+
+      /* 하단 탭바 (텍스트 대신 정교한 24px SVG 아이콘 + 편안한 터치 타깃) */
+      .tabbar {
+        height: 68px;
+        background: rgba(14, 14, 14, 0.92);
+        backdrop-filter: blur(20px);
+        border-top: 1px solid rgba(255, 255, 255, 0.07);
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        z-index: 50;
+        flex-shrink: 0;
+        padding: 0 4px;
+      }
+
+      .tab-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: var(--text-muted);
+        position: relative;
+        transition: color 0.16s ease, transform 0.16s ease;
+      }
+
+      .tab-btn svg {
+        transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), stroke-width 0.15s ease;
+      }
+
+      .tab-btn:hover {
+        color: #E5E5E5;
+      }
+
+      .tab-btn:active svg {
+        transform: scale(0.9);
+      }
+
+      .tab-btn.active {
+        color: #FFFFFF;
+      }
+
+      .tab-btn.active svg {
+        transform: scale(1.08);
+      }
+
+      /* 활성 탭 하단 미세 화이트 인디케이터 도트 */
+      .tab-btn::after {
+        content: '';
+        position: absolute;
+        bottom: 9px;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: #FFFFFF;
+        opacity: 0;
+        transform: scale(0);
+        transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .tab-btn.active::after {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      /* 구글 지도 공식 iframe 다크 모달 (<dialog>) */
+      dialog#googleMapDialog {
+        margin: auto;
+        width: 372px;
+        height: 660px;
+        background: var(--bg-card);
+        color: var(--text-main);
+        border: 1px solid var(--border-dark);
+        border-radius: 24px;
+        padding: 14px;
+        box-shadow: var(--shadow-deep);
+      }
+
+      dialog#googleMapDialog[open] {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      dialog#googleMapDialog:modal {
+        overscroll-behavior: contain;
+      }
+
+      dialog#googleMapDialog::backdrop {
+        background: rgba(0, 0, 0, 0.76);
+        overflow: hidden;
+        overscroll-behavior: contain;
+      }
+
+      .gmap-iframe-box {
+        flex: 1;
+        border-radius: 14px;
+        overflow: hidden;
+        background: var(--bg-sub);
+      }
+
+      /* 토스트 알림 */
+      .toast-msg {
+        position: absolute;
+        top: 50px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-8px);
+        background: #FFFFFF;
+        color: #0A0A0A;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 8px 16px;
+        border-radius: 999px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        z-index: 95;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+
+      .toast-msg.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="device-frame" aria-label="여울 앱">
+    <header class="status-bar" id="statusBar">
+      <span>9:41</span>
+      <span>5G 100%</span>
+    </header>
+
+    <div class="toast-msg" id="toastMsg" role="status" aria-live="polite"></div>
+
+    <div class="viewport">
+      <!-- ===================================================================
+           탭 1: [지구본] + Polarsteps 스타일 스토리 하이라이트 통합 바텀시트
+           =================================================================== -->
+      <section class="screen active" id="screenGlobe" aria-label="지구본">
+        <div class="globe-city-chips">
+          <button type="button" class="city-chip active" data-city="prague" onclick="selectCityOnGlobe('prague', true)">프라하</button>
+          <button type="button" class="city-chip" data-city="tokyo" onclick="selectCityOnGlobe('tokyo', true)">도쿄</button>
+          <button type="button" class="city-chip" data-city="osaka" onclick="selectCityOnGlobe('osaka', true)">오사카</button>
+          <button type="button" class="city-chip" data-city="hongkong" onclick="selectCityOnGlobe('hongkong', true)">홍콩</button>
+        </div>
+
+        <div id="globeContainer"></div>
+
+        <!-- 알림 드로어 확장 시 배경 딤 -->
+        <div class="globe-sheet-backdrop" id="globeSheetBackdrop" onclick="collapseGlobeSheet()"></div>
+
+        <!-- 지구본 하단 인터랙티브 알림 드로어 시트 -->
+        <div class="globe-bottom-sheet" id="globeBottomSheet">
+          <div class="sheet-grabber-zone" id="globeGrabberZone" onclick="toggleGlobeSheet()">
+            <div class="sheet-Grabber"></div>
+          </div>
+
+          <!-- 1. 기본 Peek 영역: 스토리 버블 + 프라하 요약 카드 -->
+          <div class="globe-peek-wrap">
+            <div class="story-bubbles-bar" id="storyBubblesBar"></div>
+
+            <div class="globe-summary-row">
+              <div class="globe-card-info">
+                <h2 class="globe-card-title" id="globeCardTitle">체코 프라하</h2>
+                <p class="globe-card-meta" id="globeCardMeta">2026.12.20 - 12.21 · 4곳</p>
+              </div>
+              <button type="button" class="globe-card-btn" onclick="switchTab('map')">지도 보기</button>
+            </div>
+          </div>
+
+          <!-- 2. 확장 상태: 친구들의 최근 여행 활동 및 알림 피드 -->
+          <div class="globe-activity-drawer" id="globeActivityDrawer">
+            <div class="globe-activity-head">
+              <div class="globe-activity-title-group">
+                <h3 class="globe-activity-title">친구들의 최근 여행 활동</h3>
+                <span class="globe-activity-sub">실시간 알림 피드</span>
+              </div>
+              <span class="globe-activity-count-badge">4건</span>
+            </div>
+
+            <div class="globe-activity-list" id="globeActivityList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           탭 2: [지도] 우측 상단 공유 아이콘 + 그룹 필터 & 소셜 카드
+           =================================================================== -->
+      <section class="screen" id="screenMap" aria-label="지도">
+        <div class="map-top-header">
+          <div>
+            <h2 class="map-header-title">체코 프라하</h2>
+            <p class="map-header-date">2026.12.20 - 12.21</p>
+          </div>
+
+          <div class="map-header-actions">
+            <button type="button" class="avatar-stack" onclick="openCompanionSheet()" aria-label="함께한 일행">
+              <span class="avatar-circle a1">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&h=160&q=80" alt="최현서">
+              </span>
+              <span class="avatar-circle a2">
+                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=160&h=160&q=80" alt="김성원">
+              </span>
+            </button>
+
+            <button type="button" class="btn-header-share" onclick="openShareStudioModal()" aria-label="공유 카드 스튜디오 열기">
+              <svg width="19" height="19" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                <polyline points="16 6 12 2 8 6"></polyline>
+                <line x1="12" y1="2" x2="12" y2="15"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- 스크롤 시 지도를 타고 여행지 목록 시트가 위로 올라오는 컨테이너 -->
+        <div class="map-scroll-container" id="mapScrollContainer">
+          <div class="map-sticky-wrap">
+            <div id="leafletMap"></div>
+          </div>
+
+          <div class="story-feed-sheet" id="storyFeedSheet">
+            <div class="sheet-Grabber"></div>
+
+            <!-- 그룹 필터 칩 바 -->
+            <div class="group-filter-bar" id="groupFilterBar" role="tablist" aria-label="장소 그룹 필터"></div>
+
+            <!-- 장소별 사진 카드 목록 -->
+            <div class="story-feed-list" id="storyFeedList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           탭 3: [사진첩] 다크 갤러리 UI
+           =================================================================== -->
+      <section class="screen" id="screenAlbum" aria-label="사진첩">
+        <div class="album-screen-inner">
+          <div class="album-header-bar">
+            <h2 class="album-header-title">사진첩</h2>
+          </div>
+
+          <div class="photo-grid-2col" id="albumGrid"></div>
+
+          <button type="button" class="floating-pill-cta" id="btnAddPhotos" onclick="addCheckedPhotosToMap()">
+            선택한 사진 지도에 추가 (1)
+          </button>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           탭 4: [마이] 페이지 (내 프로필 · 친구 추가 · 팔로우 · DM 메시지 허브)
+           =================================================================== -->
+      <section class="screen" id="screenMy" aria-label="마이">
+        <div class="my-screen-inner">
+          <!-- 1. 내 프로필 & 스탯 헤더 (인스타그램 감성 미니멀 헤더) -->
+          <div class="my-profile-header">
+            <img class="my-avatar-60" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=160&h=160&q=80" alt="김성원">
+            <div class="my-profile-meta">
+              <div class="my-name-line">
+                <h2 class="my-name">김성원</h2>
+                <span class="my-handle">@seong_won</span>
+              </div>
+              <div class="my-stats-compact">
+                <span>도시 <strong>4</strong></span>
+                <span class="stat-bullet">·</span>
+                <span>추억 <strong id="myRecordStatCount">16</strong></span>
+                <span class="stat-bullet">·</span>
+                <span>친구 <strong id="myFriendStatCount">12</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. 서브 탭 스위처 & + 친구 추가 버튼 -->
+          <div class="my-subtab-row">
+            <div class="my-subtab-group" role="tablist">
+              <button type="button" class="my-subtab-btn active" id="btnMySubFriends" onclick="switchMySubTab('friends')">친구 목록</button>
+              <button type="button" class="my-subtab-btn" id="btnMySubDm" onclick="switchMySubTab('dm')">메시지 (DM)</button>
+            </div>
+            <button type="button" class="btn-add-friend-pill" onclick="toggleFriendSearchBox()">+ 친구 추가</button>
+          </div>
+
+          <!-- 친구 아이디 검색 인풋 바 -->
+          <form class="friend-search-box" id="friendSearchBox" onsubmit="handleAddFriendById(event)">
+            <input type="text" class="friend-search-input" id="friendSearchInput" placeholder="친구 아이디(@handle) 또는 이름 입력..." autocomplete="off">
+            <button type="submit" class="friend-search-submit">추가</button>
+          </form>
+
+          <!-- 3. 친구 목록 영역 (친구 리스트 + 하단 가로 인스타 추천 친구 박스) -->
+          <div class="my-section-card" id="myFriendsSection">
+            <div class="companion-follow-list" id="myFriendFollowList"></div>
+
+            <!-- 하단 인스타그램 스타일 가로 스크롤 추천 친구 박스 -->
+            <div class="suggested-friends-section">
+              <div class="suggested-friends-head">
+                <span class="my-section-title">회원님을 위한 추천 친구</span>
+                <span class="suggested-all-link">모두 보기</span>
+              </div>
+              <div class="suggested-friends-carousel" id="suggestedFriendsCarousel"></div>
+            </div>
+          </div>
+
+          <!-- 4. 최근 메시지 (DM) 영역 -->
+          <div class="my-section-card" id="myDmSection" style="display: none;">
+            <div class="my-section-title">최근 메시지 (DM)</div>
+            <div class="dm-thread-list" id="myDmThreadList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           전역 모달 1: 풀스크린 스토리 뷰어 (#storyViewerModal)
+           =================================================================== -->
+      <div class="story-viewer-overlay" id="storyViewerModal">
+        <img class="story-viewer-bg" id="storyViewerImg" src="https://images.unsplash.com/photo-1592906209472-a36b1f3782ef?auto=format&fit=crop&w=800&q=80" alt="">
+        <div class="story-viewer-gradient"></div>
+
+        <div class="story-viewer-top">
+          <div class="story-progress-row" id="storyProgressRow"></div>
+          <div class="story-viewer-userbar">
+            <div class="story-viewer-meta">
+              <img class="story-viewer-avatar" id="storyViewerAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&h=160&q=80" alt="">
+              <div>
+                <div class="story-viewer-place" id="storyViewerPlace">프라하 성</div>
+                <div class="story-viewer-sub" id="storyViewerSub">@hyun_seo 외 1명</div>
+              </div>
+            </div>
+            <button type="button" class="story-viewer-close" onclick="closeStoryViewer()" aria-label="스토리 닫기">✕</button>
+          </div>
+        </div>
+
+        <div class="story-viewer-nav">
+          <div onclick="stepStorySlide(-1)" title="이전"></div>
+          <div onclick="stepStorySlide(1)" title="다음"></div>
+        </div>
+
+        <div class="story-viewer-bottom">
+          <p class="story-viewer-caption" id="storyViewerCaption">올라가는 길은 좀 힘들었는데 위에서 본 뷰가 최고</p>
+          <div class="story-viewer-music-row">
+            <span class="story-viewer-music" id="storyViewerMusic">♫ JVKE - Golden Hour</span>
+          </div>
+          <div class="story-reaction-bar">
+            <input type="text" class="story-reply-input" id="storyReplyInput" placeholder="스토리 답장 보내기..." onkeydown="handleStoryReplyKey(event)">
+            <button type="button" class="story-heart-btn" id="storyHeartBtn" onclick="toggleStoryViewerLike()" aria-label="공감">
+              <svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
+            </button>
+            <button type="button" class="story-viewer-share-btn" onclick="sharePlaceToStoryCard()">내 스토리에 공유 ↗</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================================
+           전역 모달 2: 인스타 9:16 & 4:5 공유 카드 스튜디오 (#shareStudioModal)
+           =================================================================== -->
+      <div class="share-studio-modal" id="shareStudioModal">
+        <div class="share-studio-header">
+          <span class="share-studio-title">공유 스튜디오</span>
+          <div class="format-switch" role="tablist">
+            <button type="button" class="format-btn active" id="btnFmtStory" onclick="switchShareFormat('story')">스토리 9:16</button>
+            <button type="button" class="format-btn" id="btnFmtPost" onclick="switchShareFormat('post')">피드 4:5</button>
+          </div>
+          <button type="button" class="story-viewer-close" onclick="closeShareStudioModal()" aria-label="닫기">✕</button>
+        </div>
+
+        <div class="share-card-stage">
+          <div class="insta-dom-card" id="instaDomCard">
+            <img class="insta-bg-img" id="instaBgImg" src="https://images.unsplash.com/photo-1592906209472-a36b1f3782ef?auto=format&fit=crop&w=800&q=80" alt="">
+            <div class="insta-bg-dim"></div>
+
+            <div class="insta-top">
+              <div>
+                <div class="insta-title">PRAGUE</div>
+                <div class="insta-date">2026.12.20 - 12.21</div>
+              </div>
+              <span class="insta-companion-badge" id="instaCompanionBadge">@hyun_seo @seong_won</span>
+            </div>
+
+            <div class="insta-route-map">
+              <svg class="insta-route-svg" viewBox="0 0 300 320" preserveAspectRatio="none">
+                <polyline points="195,45 95,120 75,205 185,275" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="2" stroke-dasharray="5,5"/>
+              </svg>
+
+              <div class="insta-node" style="left:64%; top:14%;">
+                <div class="insta-node-avatar">
+                  <img src="https://images.unsplash.com/photo-1541849546-216549ae216d?auto=format&fit=crop&w=800&q=80" alt="구시가지 광장">
+                </div>
+                <span class="insta-node-label">구시가지 광장</span>
+              </div>
+
+              <div class="insta-node" style="left:34%; top:38%;">
+                <div class="insta-node-avatar">
+                  <img src="https://images.unsplash.com/photo-1562624475-96c2bc08fab9?auto=format&fit=crop&w=800&q=80" alt="카를교">
+                </div>
+                <span class="insta-node-label">카를교</span>
+              </div>
+
+              <div class="insta-node" style="left:28%; top:64%;">
+                <div class="insta-node-avatar">
+                  <img src="https://images.unsplash.com/photo-1592906209472-a36b1f3782ef?auto=format&fit=crop&w=800&q=80" alt="프라하 성">
+                </div>
+                <span class="insta-node-label">프라하 성</span>
+              </div>
+
+              <div class="insta-node" style="left:60%; top:86%;">
+                <div class="insta-node-avatar">
+                  <img src="https://images.unsplash.com/photo-1513805959324-96eb66ca8713?auto=format&fit=crop&w=800&q=80" alt="비셰흐라드">
+                </div>
+                <span class="insta-node-label">비셰흐라드</span>
+              </div>
+            </div>
+
+            <div class="insta-music-footer">
+              <span class="insta-music-text" id="instaMusicText">♫ JVKE - Golden Hour</span>
+              <span class="insta-music-sub" id="instaMusicSub">@hyun_seo · @seong_won</span>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" class="floating-pill-cta" style="margin-top:0;" onclick="saveShareImage()">
+          이미지 저장
+        </button>
+      </div>
+
+      <!-- ===================================================================
+           전역 모달 3: 댓글 입력 & 전체보기 바텀시트 (#commentSheetOverlay)
+           =================================================================== -->
+      <div class="sheet-overlay" id="commentSheetOverlay" onclick="if(event.target===this)closeCommentSheet()">
+        <div class="bottom-modal-sheet" aria-labelledby="commentSheetTitle">
+          <div class="sheet-Grabber"></div>
+          <div class="sheet-header-row">
+            <h3 class="sheet-header-title" id="commentSheetTitle">댓글</h3>
+            <button type="button" class="sheet-header-action" onclick="closeCommentSheet()">닫기</button>
+          </div>
+          <div class="comment-drawer-list" id="commentDrawerList"></div>
+          <form class="comment-input-row" onsubmit="submitNewComment(event)">
+            <input type="text" class="comment-input-field" id="commentInputField" placeholder="이 장소에 댓글 남기기..." autocomplete="off">
+            <button type="submit" class="comment-submit-btn">게시</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- ===================================================================
+           전역 모달 4: 동행자 & 친구 팔로우 바텀시트 (#companionSheetOverlay)
+           =================================================================== -->
+      <div class="sheet-overlay" id="companionSheetOverlay" onclick="if(event.target===this)closeCompanionSheet()">
+        <div class="bottom-modal-sheet" aria-labelledby="companionSheetTitle">
+          <div class="sheet-Grabber"></div>
+          <div class="sheet-header-row">
+            <h3 class="sheet-header-title" id="companionSheetTitle">함께한 일행 (3)</h3>
+            <button type="button" class="sheet-header-action" onclick="addCompanionTagPrompt()">+ 일행 태그 추가</button>
+          </div>
+          <div class="companion-follow-list" id="companionFollowList"></div>
+        </div>
+      </div>
+
+      <!-- ===================================================================
+           전역 모달 5: 1:1 다크 채팅 드로어 (#dmChatModal)
+           =================================================================== -->
+      <div class="sheet-overlay" id="dmChatModal" onclick="if(event.target===this)closeDmChatModal()">
+        <div class="bottom-modal-sheet" aria-labelledby="dmChatTitle">
+          <div class="sheet-Grabber"></div>
+          <div class="sheet-header-row">
+            <h3 class="sheet-header-title" id="dmChatTitle">최현서</h3>
+            <button type="button" class="sheet-header-action" onclick="closeDmChatModal()">닫기</button>
+          </div>
+          <div class="dm-chat-messages" id="dmChatMessages"></div>
+          <form class="comment-input-row" onsubmit="submitDmMessage(event)">
+            <input type="text" class="comment-input-field" id="dmInputField" placeholder="메시지 보내기..." autocomplete="off">
+            <button type="submit" class="comment-submit-btn">전송</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 하단 4탭 바 (정교한 SVG 라인 아이콘 & 편안한 터치 영역) -->
+    <nav class="tabbar" aria-label="하단 메뉴">
+      <button type="button" class="tab-btn active" id="tabGlobe" onclick="switchTab('globe')" aria-label="지구본" title="지구본">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+      </button>
+      <button type="button" class="tab-btn" id="tabMap" onclick="switchTab('map')" aria-label="지도" title="지도">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+          <line x1="8" y1="2" x2="8" y2="18"></line>
+          <line x1="16" y1="6" x2="16" y2="22"></line>
+        </svg>
+      </button>
+      <button type="button" class="tab-btn" id="tabAlbum" onclick="switchTab('album')" aria-label="사진첩" title="사진첩">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+      </button>
+      <button type="button" class="tab-btn" id="tabMy" onclick="switchTab('my')" aria-label="마이" title="마이">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+      </button>
+    </nav>
+  </main>
+
+  <!-- 실제 구글맵 공식 iframe 모달 (<dialog>) -->
+  <dialog id="googleMapDialog" closedby="any" aria-labelledby="gmapDialogTitle">
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+      <h2 id="gmapDialogTitle" style="font-size:16px; font-weight:700;">프라하 성</h2>
+      <form method="dialog">
+        <button value="close" style="font-size:13px; font-weight:600; color:var(--text-sub); padding:4px 8px;" autofocus>닫기</button>
+      </form>
+    </div>
+    <div class="gmap-iframe-box">
+      <iframe id="gmapIframe" src="https://maps.google.com/maps?q=50.0911,14.4016&hl=ko&z=16&output=embed" width="100%" height="100%" style="border:0;" loading="lazy"></iframe>
+    </div>
+  </dialog>
+
+  <script>
+    // <dialog closedby="any"> 폴백
+    if (!('closedBy' in HTMLDialogElement.prototype)) {
+      const isOutside = (e, dialog) => {
+        const r = dialog.getBoundingClientRect();
+        return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+      };
+      for (const dialog of document.querySelectorAll('dialog[closedby="any"]')) {
+        let downOutside = false;
+        dialog.addEventListener('pointerdown', (e) => { downOutside = isOutside(e, dialog); });
+        dialog.addEventListener('pointerup', (e) => { if (downOutside && isOutside(e, dialog)) dialog.close(); });
+      }
+    }
+
+    // SVG 라인 아이콘 (stroke="currentColor" stroke-width="1.8" fill="none")
+    const SVG_ICONS = {
+      user: `<svg width="12" height="12" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`,
+      heart: `<svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`,
+      comment: `<svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>`
+    };
+
+    // 1. 고정 이미지 URL 및 데이터셋
+    const LENNON_WIKI_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Lennon_Wall_in_Prague_%282018%29.jpg/800px-Lennon_Wall_in_Prague_%282018%29.jpg';
+    const LENNON_FALLBACK_URL = 'https://images.unsplash.com/photo-1708569873142-1727fb9d82cf?auto=format&fit=crop&w=800&q=80';
+
+    const PHOTO_URLS = {
+      oldtown: 'https://images.unsplash.com/photo-1541849546-216549ae216d?auto=format&fit=crop&w=800&q=80',
+      charles: 'https://images.unsplash.com/photo-1562624475-96c2bc08fab9?auto=format&fit=crop&w=800&q=80',
+      castle: 'https://images.unsplash.com/photo-1592906209472-a36b1f3782ef?auto=format&fit=crop&w=800&q=80',
+      vysehrad: 'https://images.unsplash.com/photo-1513805959324-96eb66ca8713?auto=format&fit=crop&w=800&q=80',
+      dancing: 'https://images.unsplash.com/photo-1519677100203-a0e668c92439?auto=format&fit=crop&w=800&q=80',
+      lennon: LENNON_WIKI_URL,
+      powder: 'https://images.unsplash.com/photo-1564511287568-54483b52a35e?auto=format&fit=crop&w=800&q=80',
+      letna: 'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?auto=format&fit=crop&w=800&q=80',
+      tokyo: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80',
+      osaka: 'https://images.unsplash.com/photo-1590559899731-a382839e5549?auto=format&fit=crop&w=800&q=80',
+      hongkong: 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=800&q=80'
+    };
+
+    const AVATAR_URLS = {
+      hyun_seo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&h=160&q=80',
+      min_kyung: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=160&h=160&q=80',
+      seong_won: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=160&h=160&q=80',
+      seong_hee: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&h=160&q=80',
+      san_ha: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=160&h=160&q=80'
+    };
+
+    // 동행자 및 추천 친구 리스트 ([마이] 탭 & 바텀시트 공유)
+    const COMPANION_USERS = [
+      {
+        name: '최현서',
+        handle: '@hyun_seo',
+        sub: '프라하 동행 · 사진 6장',
+        avatar: AVATAR_URLS.hyun_seo,
+        following: true,
+        isCompanion: true
+      },
+      {
+        name: '송민경',
+        handle: '@min_kyung',
+        sub: '프라하 동행 · 사진 7장',
+        avatar: AVATAR_URLS.min_kyung,
+        following: true,
+        isCompanion: true
+      },
+      {
+        name: '박성희',
+        handle: '@seong_hee',
+        sub: '함께 아는 친구 5명',
+        avatar: AVATAR_URLS.seong_hee,
+        following: false,
+        isCompanion: false
+      },
+      {
+        name: '이산하',
+        handle: '@san_ha',
+        sub: '최현서 님이 팔로우함',
+        avatar: AVATAR_URLS.san_ha,
+        following: false,
+        isCompanion: false
+      },
+      {
+        name: '강도윤',
+        handle: '@doyun_k',
+        sub: '회원님을 위한 추천',
+        avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=160&h=160&q=80',
+        following: false,
+        isCompanion: false
+      },
+      {
+        name: '정유진',
+        handle: '@yujin_travel',
+        sub: '체코 프라하 여행 중',
+        avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=160&h=160&q=80',
+        following: false,
+        isCompanion: false
+      }
+    ];
+
+    // 친구들의 최근 여행 활동 및 실시간 알림 피드 데이터
+    const ACTIVITY_FEED = [
+      {
+        id: 'act1',
+        user: '최현서',
+        avatar: AVATAR_URLS.hyun_seo,
+        targetDesc: "'프라하 성' 사진에 댓글",
+        actionTail: '을 남겼습니다.',
+        time: '방금 전',
+        btnText: '보기',
+        type: 'comment',
+        placeIdx: 0
+      },
+      {
+        id: 'act2',
+        user: '송민경',
+        avatar: AVATAR_URLS.min_kyung,
+        targetDesc: '새로운 체코 여행 앨범',
+        actionTail: '을 공유했습니다.',
+        time: '12분 전',
+        btnText: '보기',
+        type: 'album'
+      },
+      {
+        id: 'act3',
+        user: '박성희',
+        avatar: AVATAR_URLS.seong_hee,
+        targetDesc: '회원님을 팔로우',
+        actionTail: '하기 시작했습니다.',
+        time: '1시간 전',
+        btnText: '맞팔로우',
+        type: 'follow',
+        userIdx: 2
+      },
+      {
+        id: 'act4',
+        user: '이산하',
+        avatar: AVATAR_URLS.san_ha,
+        targetDesc: "'카를교' 사진",
+        actionTail: '을 좋아합니다.',
+        time: '3시간 전',
+        btnText: '보기',
+        type: 'like',
+        placeIdx: 1
+      }
+    ];
+
+    // 1:1 DM 대화방 데이터
+    const DM_THREADS = [
+      {
+        id: 'hyun_seo',
+        name: '최현서',
+        avatar: AVATAR_URLS.hyun_seo,
+        time: '오후 8:32',
+        unread: true,
+        messages: [
+          { from: 'them', text: '프라하 성 야경 사진 정리 끝났어?' },
+          { from: 'me', text: '응 방금 여울 지도에 다 올려뒀어!' },
+          { from: 'them', text: '우리 다음엔 어디 가?' }
+        ]
+      },
+      {
+        id: 'min_kyung',
+        name: '송민경',
+        avatar: AVATAR_URLS.min_kyung,
+        time: '방금 전',
+        unread: false,
+        messages: [
+          { from: 'me', text: '카를교 아침 사진 색감 진짜 좋더라' },
+          { from: 'them', text: '프라하 사진 다 올렸어! 공유해줘' }
+        ]
+      }
+    ];
+
+    const CITIES = [
+      { id: 'prague', name: '프라하', title: '체코 프라하', meta: '2026.12.20 - 12.21 · 4곳', lat: 50.0875, lng: 14.4213, globeLat: 50.0875, globeLng: 14.4213, photo: PHOTO_URLS.castle },
+      { id: 'tokyo', name: '도쿄', title: '일본 도쿄', meta: '2026.05.12 - 05.15 · 6곳', lat: 35.6762, lng: 139.6503, globeLat: 39.5, globeLng: 142.0, photo: PHOTO_URLS.tokyo },
+      { id: 'osaka', name: '오사카', title: '일본 오사카', meta: '2025.10.03 - 10.06 · 5곳', lat: 34.6937, lng: 135.5023, globeLat: 31.0, globeLng: 131.5, photo: PHOTO_URLS.osaka },
+      { id: 'hongkong', name: '홍콩', title: '홍콩', meta: '2025.02.14 - 02.17 · 4곳', lat: 22.3193, lng: 114.1694, globeLat: 21.0, globeLng: 113.5, photo: PHOTO_URLS.hongkong }
+    ];
+
+    const PLACES = [
+      {
+        id: 'castle',
+        name: '프라하 성',
+        day: 2,
+        companions: ['@hyun_seo', '@seong_won'],
+        authorAvatar: AVATAR_URLS.hyun_seo,
+        lat: 50.0895,
+        lng: 14.4048,
+        time: '12.21 16:48',
+        song: 'JVKE - Golden Hour',
+        photo: PHOTO_URLS.castle,
+        comment: '올라가는 길은 좀 힘들었는데 위에서 본 뷰가 최고',
+        chips: ['올라가는 길은 좀 힘들었는데 위에서 본 뷰가 최고', '해 질 녘에 가니까 풍경이 잘 보임', '생각보다 규모가 커서 볼 게 많았음'],
+        likes: 24,
+        liked: false,
+        comments: [
+          { user: '김성원', avatar: AVATAR_URLS.seong_won, text: '성 위에서 내려다본 주황색 지붕들 아직도 생각남' },
+          { user: '최현서', avatar: AVATAR_URLS.hyun_seo, text: '여기 야경 보면서 마신 맥주 진짜 최고였음' }
+        ]
+      },
+      {
+        id: 'charles',
+        name: '카를교',
+        day: 2,
+        companions: ['@hyun_seo'],
+        authorAvatar: AVATAR_URLS.hyun_seo,
+        lat: 50.0865,
+        lng: 14.4114,
+        time: '12.21 08:10',
+        song: 'Ludovico Einaudi - Nuvole Bianche',
+        photo: PHOTO_URLS.charles,
+        comment: '아침 일찍 가니까 한산해서 사진 찍기 딱 좋음',
+        chips: ['아침 일찍 가니까 한산해서 사진 찍기 딱 좋음', '다리 위에서 보는 강변 뷰가 좋음', '산책하면서 건너기 적당했음'],
+        likes: 19,
+        liked: true,
+        comments: [
+          { user: '박성희', avatar: AVATAR_URLS.seong_hee, text: '안개 살짝 낀 색감 대박이다' },
+          { user: '최현서', avatar: AVATAR_URLS.hyun_seo, text: '일찍 일어나서 나가길 진짜 잘했어' }
+        ]
+      },
+      {
+        id: 'oldtown',
+        name: '구시가지 광장',
+        day: 1,
+        companions: ['@hyun_seo', '@seong_won'],
+        authorAvatar: AVATAR_URLS.seong_won,
+        lat: 50.0882,
+        lng: 14.4182,
+        time: '12.20 18:14',
+        song: 'Lauv - Paris in the Rain',
+        photo: PHOTO_URLS.oldtown,
+        comment: '사람 많았는데 야경은 진짜 좋았음',
+        chips: ['사람 많았는데 야경은 진짜 좋았음', '시계탑 앞이 사진 찍기 좋았음', '근처 노점 음식이 괜찮았음'],
+        likes: 31,
+        liked: false,
+        comments: [
+          { user: '최현서', avatar: AVATAR_URLS.hyun_seo, text: '천문시계 정각 종소리 기다리던 거 재밌었음' },
+          { user: '김성원', avatar: AVATAR_URLS.seong_won, text: '광장 앞 굴라쉬 맛집 또 가고 싶다' }
+        ]
+      },
+      {
+        id: 'vysehrad',
+        name: '비셰흐라드',
+        day: 1,
+        companions: ['@seong_won'],
+        authorAvatar: AVATAR_URLS.seong_won,
+        lat: 50.0842,
+        lng: 14.4152,
+        time: '12.20 19:32',
+        song: 'Claude Debussy - Clair de Lune',
+        photo: PHOTO_URLS.vysehrad,
+        comment: '',
+        chips: [
+          '야경 보면서 맥주 마시기 좋았음',
+          '조용해서 산책하기 괜찮았음',
+          '바람은 좀 불었지만 뷰가 탁 트여 있음'
+        ],
+        likes: 15,
+        liked: false,
+        comments: [
+          { user: '이산하', avatar: AVATAR_URLS.san_ha, text: '여기 노을 맛집이라고 들었는데 부럽다' },
+          { user: '김성원', avatar: AVATAR_URLS.seong_won, text: '성벽 위 산책로가 생각보다 훨씬 한적했음' }
+        ]
+      }
+    ];
+
+    const ALBUM_PHOTOS = [
+      { id: 'dancing', name: '댄싱 하우스', day: 2, companions: ['@hyun_seo'], time: '12.22 11:20', lat: 50.0755, lng: 14.4141, song: 'Chet Baker - Almost Blue', photo: PHOTO_URLS.dancing, selected: true },
+      { id: 'lennon', name: '존 레논 벽', day: 2, companions: ['@hyun_seo', '@seong_won'], time: '12.22 13:05', lat: 50.0862, lng: 14.4068, song: 'The Beatles - Imagine', photo: PHOTO_URLS.lennon, fallback: LENNON_FALLBACK_URL, selected: false },
+      { id: 'powder', name: '화약탑', day: 1, companions: ['@seong_won'], time: '12.22 15:40', lat: 50.0873, lng: 14.4278, song: 'Olafur Arnalds - Saman', photo: PHOTO_URLS.powder, selected: false },
+      { id: 'letna', name: '레트나 공원', day: 2, companions: ['@hyun_seo', '@seong_won'], time: '12.22 17:10', lat: 50.0948, lng: 14.4158, song: 'Novo Amor - Anchor', photo: PHOTO_URLS.letna, selected: false }
+    ];
+
+    let currentCityId = 'prague';
+    let currentPlaceIdx = 0;
+    let activeGroupFilter = 'all';
+    let activeCommentPlaceIdx = 0;
+    let activeDmThreadId = 'hyun_seo';
+    let baseFriendCount = 10;
+
+    function getFilteredPlaces() {
+      return PLACES.map((p, idx) => ({ place: p, idx })).filter(({ place }) => {
+        if (activeGroupFilter === 'all') return true;
+        if (activeGroupFilter === 'day1') return place.day === 1;
+        if (activeGroupFilter === 'day2') return place.day === 2;
+        if (activeGroupFilter === 'hyun_seo') return place.companions.includes('@hyun_seo');
+        if (activeGroupFilter === 'seong_won') return place.companions.includes('@seong_won');
+        return true;
+      });
+    }
+
+    // 2. 탭 1: [지구본] + 스토리 버블 바
+    let globeObj = null;
+
+    function initGlobe() {
+      const container = document.getElementById('globeContainer');
+      if (!container || typeof Globe !== 'function') return;
+
+      globeObj = Globe()(container)
+        .width(398)
+        .height(786)
+        .backgroundColor('#0A0A0A')
+        .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+        .atmosphereColor('#A3A3A3')
+        .atmosphereAltitude(0.1)
+        .htmlElementsData(CITIES)
+        .htmlLat((d) => d.globeLat)
+        .htmlLng((d) => d.globeLng)
+        .htmlAltitude(0)
+        .htmlElement((d) => {
+          const host = document.createElement('div');
+          host.className = 'globe-pin-host';
+          host.innerHTML = `
+            <div class="globe-pin-anchor ${d.id === currentCityId ? 'active' : ''}" id="globePin_${d.id}">
+              <div class="globe-pin-frame">
+                <img src="${d.photo}" alt="${d.name}">
+              </div>
+              <div class="globe-pin-tail"></div>
+            </div>
+          `;
+          host.querySelector('.globe-pin-anchor').onclick = (e) => {
+            e.stopPropagation();
+            selectCityOnGlobe(d.id, true);
+          };
+          return host;
+        });
+
+      globeObj.pointOfView({ lat: 35.0, lng: 75.0, altitude: 2.9 }, 0);
+      renderStoryBubbles();
+    }
+
+    function selectCityOnGlobe(cityId, zoomIn) {
+      const city = CITIES.find((c) => c.id === cityId);
+      if (!city) return;
+      currentCityId = cityId;
+
+      document.querySelectorAll('.city-chip').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.city === cityId);
+      });
+
+      document.querySelectorAll('.globe-pin-anchor').forEach((el) => {
+        el.classList.toggle('active', el.id === `globePin_${cityId}`);
+      });
+
+      if (globeObj && zoomIn) {
+        globeObj.pointOfView({ lat: city.globeLat, lng: city.globeLng, altitude: 1.5 }, 900);
+      }
+
+      document.getElementById('globeCardTitle').textContent = city.title;
+      document.getElementById('globeCardMeta').textContent = city.meta;
+    }
+
+    // 지구본 하단 시트 내 원형 스토리 하이라이트 버블 바 렌더링
+    function renderStoryBubbles() {
+      const bar = document.getElementById('storyBubblesBar');
+      if (!bar) return;
+      bar.innerHTML = '';
+
+      PLACES.forEach((place, idx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'story-bubble-item';
+        btn.onclick = () => openStoryViewer(idx);
+        btn.innerHTML = `
+          <div class="story-bubble-ring">
+            <img src="${place.photo}" alt="${place.name}" onerror="if(this.dataset.fb)this.src=this.dataset.fb" data-fb="${LENNON_FALLBACK_URL}">
+          </div>
+          <span class="story-bubble-name">${place.name}</span>
+        `;
+        bar.appendChild(btn);
+      });
+    }
+
+    // 3. 탭 2: [지도 & 소셜 카드 뷰]
+    let mapInstance = null;
+    let mapMarkers = [];
+
+    function initMap() {
+      if (mapInstance || typeof L === 'undefined') return;
+
+      mapInstance = L.map('leafletMap', {
+        center: [50.0870, 14.4115],
+        zoom: 15,
+        zoomControl: false,
+        attributionControl: false
+      });
+
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19
+      }).addTo(mapInstance);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19
+      }).addTo(mapInstance);
+
+      renderGroupFilterBar();
+      renderMapMarkers();
+      renderStoryFeed();
+    }
+
+    function renderGroupFilterBar() {
+      const bar = document.getElementById('groupFilterBar');
+      if (!bar) return;
+      const filters = [
+        { key: 'all', label: `전체 · ${PLACES.length}` },
+        { key: 'day1', label: 'Day 1' },
+        { key: 'day2', label: 'Day 2' },
+        { key: 'hyun_seo', label: '최현서와 함께' },
+        { key: 'seong_won', label: '김성원과 함께' }
+      ];
+      bar.innerHTML = filters.map((f) => `
+        <button type="button" class="group-filter-chip ${activeGroupFilter === f.key ? 'active' : ''}" onclick="setGroupFilter('${f.key}')">${f.label}</button>
+      `).join('');
+    }
+
+    function setGroupFilter(filterKey) {
+      activeGroupFilter = filterKey;
+      const filtered = getFilteredPlaces();
+      if (filtered.length > 0 && !filtered.some((item) => item.idx === currentPlaceIdx)) {
+        currentPlaceIdx = filtered[0].idx;
+      }
+      renderGroupFilterBar();
+      renderMapMarkers();
+      renderStoryFeed();
+      if (filtered.length > 0 && mapInstance) {
+        const firstPlace = PLACES[currentPlaceIdx];
+        mapInstance.flyTo([firstPlace.lat, firstPlace.lng], 15, { duration: 0.5 });
+      }
+    }
+
+    function renderMapMarkers() {
+      if (!mapInstance || typeof L === 'undefined') return;
+
+      mapMarkers.forEach((m) => m.remove());
+      mapMarkers = [];
+
+      const filtered = getFilteredPlaces();
+      filtered.forEach(({ place: p, idx }) => {
+        const icon = L.divIcon({
+          className: '',
+          iconSize: [52, 58],
+          iconAnchor: [26, 56],
+          html: `
+            <div class="map-photo-pin ${idx === currentPlaceIdx ? 'selected' : ''}" id="mapPin_${idx}">
+              <div class="map-pin-box">
+                <img src="${p.photo}" alt="${p.name}" onerror="if(this.dataset.fb)this.src=this.dataset.fb" data-fb="${LENNON_FALLBACK_URL}">
+              </div>
+              <div class="map-pin-tail"></div>
+            </div>
+          `
+        });
+
+        const marker = L.marker([p.lat, p.lng], { icon }).addTo(mapInstance);
+        marker.on('click', () => focusPlace(idx, true));
+        mapMarkers.push(marker);
+      });
+    }
+
+    function renderStoryFeed() {
+      const feed = document.getElementById('storyFeedList');
+      if (!feed) return;
+      feed.innerHTML = '';
+
+      const filtered = getFilteredPlaces();
+      filtered.forEach(({ place, idx }) => {
+        const card = document.createElement('article');
+        card.className = `story-magazine-card ${idx === currentPlaceIdx ? 'active' : ''}`;
+        card.id = `storyCard_${idx}`;
+        card.dataset.placeIdx = idx;
+        card.onclick = () => focusPlace(idx, false);
+
+        const isPlayingThis = isPlayingAudio && playingPlaceIdx === idx;
+        const companionLabel = place.companions.join(' · ');
+        const latestComment = place.comments[place.comments.length - 1];
+
+        const memoHtml = (place.comment && place.comment.trim() !== '')
+          ? `<p class="story-memo-text">${place.comment}</p>`
+          : `
+            <div class="story-chip-group" onclick="event.stopPropagation()">
+              ${place.chips.map((c) => `<button type="button" class="story-memo-chip" onclick="selectMemoChip(${idx}, '${c}')">${c}</button>`).join('')}
+            </div>
+          `;
+
+        const commentPreviewHtml = latestComment
+          ? `
+            <div class="story-comment-preview" onclick="event.stopPropagation(); openCommentSheet(${idx})">
+              <div class="story-comment-line">
+                <span class="story-comment-user">${latestComment.user}</span>${latestComment.text}
+              </div>
+              <span class="story-comment-more">더보기</span>
+            </div>
+          `
+          : '';
+
+        card.innerHTML = `
+          <div class="story-card-photo">
+            <img src="${place.photo}" alt="${place.name}" onerror="if(this.dataset.fb)this.src=this.dataset.fb" data-fb="${LENNON_FALLBACK_URL}">
+            <button type="button" class="companion-tag-pill" onclick="event.stopPropagation(); openCompanionSheet()">
+              ${SVG_ICONS.user}
+              <span>${companionLabel}</span>
+            </button>
+            <button type="button" class="btn-gmap-link" onclick="event.stopPropagation(); openGoogleMapModal(${idx})" aria-label="지도 확대">↗</button>
+          </div>
+          <div class="story-card-body">
+            <div class="story-title-row">
+              <h3 class="story-place-name">${place.name}</h3>
+              <span class="story-day-label">Day ${place.day}</span>
+            </div>
+            ${memoHtml}
+            ${commentPreviewHtml}
+            <div class="story-action-bar" onclick="event.stopPropagation()">
+              <div class="story-action-left">
+                <button type="button" class="sns-action-btn ${place.liked ? 'liked' : ''}" onclick="togglePlaceLike(${idx})" aria-label="좋아요">
+                  ${SVG_ICONS.heart}
+                  <span>${place.likes}</span>
+                </button>
+                <button type="button" class="sns-action-btn" onclick="openCommentSheet(${idx})" aria-label="댓글">
+                  ${SVG_ICONS.comment}
+                  <span>${place.comments.length}</span>
+                </button>
+              </div>
+              <button type="button" class="btn-story-play ${isPlayingThis ? 'playing' : ''}" onclick="toggleMusic(${idx})" aria-label="음악 재생">${isPlayingThis ? '■' : '♫'}</button>
+            </div>
+          </div>
+        `;
+        feed.appendChild(card);
+      });
+    }
+
+    function focusPlace(idx, scrollCardIntoView) {
+      currentPlaceIdx = idx;
+      const place = PLACES[idx];
+      if (!place) return;
+
+      document.querySelectorAll('.map-photo-pin').forEach((el) => {
+        el.classList.toggle('selected', el.id === `mapPin_${idx}`);
+      });
+
+      document.querySelectorAll('.story-magazine-card').forEach((el) => {
+        el.classList.toggle('active', Number(el.dataset.placeIdx) === idx);
+      });
+
+      if (mapInstance) {
+        mapInstance.flyTo([place.lat, place.lng], 15, { duration: 0.65 });
+      }
+
+      if (scrollCardIntoView) {
+        const cardEl = document.getElementById(`storyCard_${idx}`);
+        if (cardEl) cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    // 좋아요 토글 & 댓글 드로어 제어
+    function togglePlaceLike(idx) {
+      const place = PLACES[idx];
+      if (!place) return;
+      place.liked = !place.liked;
+      place.likes += place.liked ? 1 : -1;
+      renderStoryFeed();
+    }
+
+    function openCommentSheet(idx) {
+      activeCommentPlaceIdx = idx;
+      const place = PLACES[idx];
+      if (!place) return;
+      document.getElementById('commentSheetTitle').textContent = `${place.name} 댓글 (${place.comments.length})`;
+      renderCommentDrawerList();
+      document.getElementById('commentSheetOverlay').classList.add('open');
+      setTimeout(() => {
+        document.getElementById('commentInputField').focus();
+      }, 180);
+    }
+
+    function closeCommentSheet() {
+      document.getElementById('commentSheetOverlay').classList.remove('open');
+    }
+
+    function renderCommentDrawerList() {
+      const place = PLACES[activeCommentPlaceIdx];
+      const list = document.getElementById('commentDrawerList');
+      if (!place || !list) return;
+
+      list.innerHTML = place.comments.map((c) => `
+        <div class="comment-drawer-item">
+          <img class="comment-avatar" src="${c.avatar || AVATAR_URLS.hyun_seo}" alt="${c.user}">
+          <div class="comment-body">
+            <span class="comment-author">${c.user}</span>
+            <span class="comment-text">${c.text}</span>
+          </div>
+        </div>
+      `).join('');
+      list.scrollTop = list.scrollHeight;
+    }
+
+    function submitNewComment(e) {
+      e.preventDefault();
+      const input = document.getElementById('commentInputField');
+      const text = (input.value || '').trim();
+      if (!text) return;
+
+      const place = PLACES[activeCommentPlaceIdx];
+      if (!place) return;
+
+      place.comments.push({
+        user: '김성원',
+        avatar: AVATAR_URLS.seong_won,
+        text
+      });
+
+      input.value = '';
+      document.getElementById('commentSheetTitle').textContent = `${place.name} 댓글 (${place.comments.length})`;
+      renderCommentDrawerList();
+      renderStoryFeed();
+      showToast('댓글이 등록되었습니다');
+    }
+
+    // 동행자 & 친구 팔로우 시트 제어 + [마이] 탭 동기화
+    // 지구본 하단 인터랙티브 알림 드로어 & 활동 피드 제어
+    let globeSheetExpanded = false;
+
+    function toggleGlobeSheet(force) {
+      const sheet = document.getElementById('globeBottomSheet');
+      const backdrop = document.getElementById('globeSheetBackdrop');
+      if (!sheet) return;
+      globeSheetExpanded = force !== undefined ? force : !globeSheetExpanded;
+      sheet.classList.toggle('expanded', globeSheetExpanded);
+      if (backdrop) backdrop.classList.toggle('active', globeSheetExpanded);
+      if (globeSheetExpanded) {
+        renderActivityFeed();
+      }
+    }
+
+    function collapseGlobeSheet() {
+      toggleGlobeSheet(false);
+    }
+
+    function expandGlobeSheet() {
+      toggleGlobeSheet(true);
+    }
+
+    function renderActivityFeed() {
+      const list = document.getElementById('globeActivityList');
+      if (!list) return;
+      list.innerHTML = ACTIVITY_FEED.map((item, idx) => {
+        const isFollowing = item.type === 'follow' && COMPANION_USERS[item.userIdx] && COMPANION_USERS[item.userIdx].following;
+        const btnLabel = item.type === 'follow' ? (isFollowing ? '팔로잉' : '맞팔로우') : item.btnText;
+        const btnClass = isFollowing ? 'btn-activity-action following' : 'btn-activity-action';
+        return `
+          <div class="activity-feed-item">
+            <div class="activity-feed-left">
+              <img class="activity-feed-avatar" src="${item.avatar}" alt="${item.user}">
+              <div class="activity-feed-content">
+                <div class="activity-feed-text">
+                  <span class="activity-feed-user">${item.user}</span>님이 <span class="activity-feed-target">${item.targetDesc}</span>${item.actionTail}
+                </div>
+                <div class="activity-feed-time">${item.time}</div>
+              </div>
+            </div>
+            <button type="button" class="${btnClass}" onclick="handleActivityAction(${idx})">${btnLabel}</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function handleActivityAction(idx) {
+      const item = ACTIVITY_FEED[idx];
+      if (!item) return;
+
+      if (item.type === 'comment') {
+        collapseGlobeSheet();
+        switchTab('map');
+        setTimeout(() => {
+          focusPlace(item.placeIdx, true);
+          openCommentSheet(item.placeIdx);
+          showToast(`${item.user}님의 댓글을 확인합니다`);
+        }, 180);
+      } else if (item.type === 'album') {
+        collapseGlobeSheet();
+        switchTab('album');
+        showToast(`${item.user}님이 공유한 사진첩으로 이동합니다`);
+      } else if (item.type === 'follow') {
+        toggleUserFollow(item.userIdx);
+        renderActivityFeed();
+      } else if (item.type === 'like') {
+        collapseGlobeSheet();
+        switchTab('map');
+        setTimeout(() => {
+          focusPlace(item.placeIdx, true);
+          showToast(`${item.user}님이 좋아한 장소로 이동합니다`);
+        }, 180);
+      }
+    }
+
+    function initGlobeDrawerGestures() {
+      const sheet = document.getElementById('globeBottomSheet');
+      if (!sheet) return;
+
+      let startY = 0;
+      let isDragging = false;
+
+      sheet.addEventListener('touchstart', (e) => {
+        if (!e.touches || !e.touches[0]) return;
+        startY = e.touches[0].clientY;
+        isDragging = true;
+      }, { passive: true });
+
+      sheet.addEventListener('touchmove', (e) => {
+        if (!isDragging || !e.touches || !e.touches[0]) return;
+        const currentY = e.touches[0].clientY;
+        const diff = currentY - startY;
+
+        // 아래로 스와이프 (diff > 45) && 확장 상태 && 스크롤 상단 -> 닫기
+        if (diff > 45 && globeSheetExpanded && sheet.scrollTop <= 0) {
+          collapseGlobeSheet();
+          isDragging = false;
+        }
+        // 위로 스와이프 (diff < -35) && 닫힌 상태 -> 열기
+        else if (diff < -35 && !globeSheetExpanded) {
+          expandGlobeSheet();
+          isDragging = false;
+        }
+      }, { passive: true });
+
+      sheet.addEventListener('touchend', () => {
+        isDragging = false;
+      }, { passive: true });
+
+      sheet.addEventListener('wheel', (e) => {
+        if (!globeSheetExpanded && e.deltaY > 15) {
+          expandGlobeSheet();
+        } else if (globeSheetExpanded && e.deltaY < -20 && sheet.scrollTop <= 0) {
+          collapseGlobeSheet();
+        }
+      }, { passive: true });
+    }
+
+    function openCompanionSheet() {
+      renderAllCompanionLists();
+      document.getElementById('companionSheetOverlay').classList.add('open');
+    }
+
+    function closeCompanionSheet() {
+      document.getElementById('companionSheetOverlay').classList.remove('open');
+    }
+
+    function renderAllCompanionLists() {
+      // 1. 함께한 동행자 목록 (상단 수직 리스트)
+      const companions = COMPANION_USERS.filter((u) => u.isCompanion);
+      const companionHtml = companions.map((u) => {
+        const idx = COMPANION_USERS.indexOf(u);
+        return `
+          <div class="companion-follow-item">
+            <div class="companion-user-left">
+              <img class="companion-user-avatar" src="${u.avatar}" alt="${u.name}">
+              <div>
+                <div class="companion-user-name">${u.name}</div>
+                <div class="companion-user-sub">${u.sub}</div>
+              </div>
+            </div>
+            <button type="button" class="btn-follow-toggle ${u.following ? 'following' : ''}" onclick="toggleUserFollow(${idx})">
+              ${u.following ? '팔로잉' : '팔로우'}
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      const sheetList = document.getElementById('companionFollowList');
+      if (sheetList) {
+        sheetList.innerHTML = COMPANION_USERS.map((u, idx) => `
+          <div class="companion-follow-item">
+            <div class="companion-user-left">
+              <img class="companion-user-avatar" src="${u.avatar}" alt="${u.name}">
+              <div>
+                <div class="companion-user-name">${u.name}</div>
+                <div class="companion-user-sub">${u.sub}</div>
+              </div>
+            </div>
+            <button type="button" class="btn-follow-toggle ${u.following ? 'following' : ''}" onclick="toggleUserFollow(${idx})">
+              ${u.following ? '팔로잉' : '팔로우'}
+            </button>
+          </div>
+        `).join('');
+      }
+
+      const myList = document.getElementById('myFriendFollowList');
+      if (myList) myList.innerHTML = companionHtml;
+
+      // 2. 하단 인스타그램 스타일 가로 스크롤 추천 친구 박스 렌더링
+      renderSuggestedFriendsCarousel();
+
+      const followingCount = COMPANION_USERS.filter((u) => u.following).length;
+      const statEl = document.getElementById('myFriendStatCount');
+      if (statEl) statEl.textContent = String(baseFriendCount + followingCount);
+    }
+
+    function renderSuggestedFriendsCarousel() {
+      const carousel = document.getElementById('suggestedFriendsCarousel');
+      if (!carousel) return;
+
+      const suggested = COMPANION_USERS.filter((u) => !u.isCompanion && !u.dismissed);
+      if (suggested.length === 0) {
+        carousel.innerHTML = `<div style="font-size: 12px; color: var(--text-muted); padding: 12px 6px;">새로운 추천 친구가 없습니다.</div>`;
+        return;
+      }
+
+      carousel.innerHTML = suggested.map((u) => {
+        const idx = COMPANION_USERS.indexOf(u);
+        return `
+          <div class="suggested-friend-card" id="suggestCard_${idx}">
+            <button type="button" class="btn-dismiss-suggest" onclick="dismissSuggestedUser(${idx})" aria-label="추천 닫기">✕</button>
+            <img class="suggested-card-avatar" src="${u.avatar}" alt="${u.name}">
+            <div class="suggested-card-name">${u.name}</div>
+            <div class="suggested-card-sub">${u.sub}</div>
+            <button type="button" class="btn-suggest-follow ${u.following ? 'following' : ''}" onclick="toggleUserFollow(${idx})">
+              ${u.following ? '팔로잉' : '팔로우'}
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function dismissSuggestedUser(idx) {
+      const user = COMPANION_USERS[idx];
+      if (!user) return;
+      user.dismissed = true;
+      renderSuggestedFriendsCarousel();
+    }
+
+    function toggleUserFollow(userIdx) {
+      const user = COMPANION_USERS[userIdx];
+      if (!user) return;
+      user.following = !user.following;
+      renderAllCompanionLists();
+      renderActivityFeed();
+      showToast(user.following ? `${user.handle} 님을 팔로우합니다` : `${user.handle} 님 팔로우를 취소했습니다`);
+    }
+
+    function addCompanionTagPrompt() {
+      const place = PLACES[currentPlaceIdx];
+      if (place && !place.companions.includes('@seong_hee')) {
+        place.companions.push('@seong_hee');
+        renderStoryFeed();
+      }
+      showToast('@seong_hee 님이 일행 태그에 추가되었습니다');
+    }
+
+    // [마이] 탭 서브탭 / 친구 추가 / DM 제어
+    function switchMySubTab(subKey) {
+      document.getElementById('btnMySubFriends').classList.toggle('active', subKey === 'friends');
+      document.getElementById('btnMySubDm').classList.toggle('active', subKey === 'dm');
+      const friendsSec = document.getElementById('myFriendsSection');
+      const dmSec = document.getElementById('myDmSection');
+      if (subKey === 'dm') {
+        friendsSec.style.display = 'none';
+        dmSec.style.display = 'flex';
+      } else {
+        friendsSec.style.display = 'flex';
+        dmSec.style.display = 'none';
+      }
+    }
+
+    function toggleFriendSearchBox() {
+      const box = document.getElementById('friendSearchBox');
+      const isOpen = box.classList.toggle('open');
+      if (isOpen) {
+        setTimeout(() => document.getElementById('friendSearchInput').focus(), 100);
+      }
+    }
+
+    function handleAddFriendById(e) {
+      e.preventDefault();
+      const input = document.getElementById('friendSearchInput');
+      const raw = (input.value || '').trim();
+      if (!raw) return;
+      const handle = raw.startsWith('@') ? raw : `@${raw}`;
+      const name = raw.replace(/^@/, '');
+      COMPANION_USERS.push({
+        name,
+        handle,
+        sub: `${handle} · 새로 추가한 친구`,
+        avatar: AVATAR_URLS.san_ha,
+        following: true,
+        isCompanion: true
+      });
+      input.value = '';
+      document.getElementById('friendSearchBox').classList.remove('open');
+      renderAllCompanionLists();
+      showToast(`${name} 님을 친구로 추가했습니다`);
+    }
+
+    function renderDmThreads() {
+      const list = document.getElementById('myDmThreadList');
+      if (!list) return;
+      list.innerHTML = DM_THREADS.map((t) => {
+        const lastMsg = t.messages[t.messages.length - 1];
+        return `
+          <div class="dm-thread-item" onclick="openDmChatModal('${t.id}')">
+            <div class="dm-thread-left">
+              <img class="companion-user-avatar" src="${t.avatar}" alt="${t.name}">
+              <div class="dm-thread-info">
+                <div class="dm-thread-name">${t.name}</div>
+                <div class="dm-thread-preview">${lastMsg ? lastMsg.text : ''}</div>
+              </div>
+            </div>
+            <div class="dm-thread-right">
+              <span class="dm-thread-time">${t.time}</span>
+              ${t.unread ? '<span class="dm-unread-dot" aria-label="안 읽은 메시지"></span>' : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openDmChatModal(threadId) {
+      activeDmThreadId = threadId;
+      const thread = DM_THREADS.find((t) => t.id === threadId);
+      if (!thread) return;
+      thread.unread = false;
+      renderDmThreads();
+      document.getElementById('dmChatTitle').textContent = `${thread.name}님과의 대화`;
+      renderDmChatMessages();
+      document.getElementById('dmChatModal').classList.add('open');
+      setTimeout(() => document.getElementById('dmInputField').focus(), 180);
+    }
+
+    function closeDmChatModal() {
+      document.getElementById('dmChatModal').classList.remove('open');
+    }
+
+    function renderDmChatMessages() {
+      const thread = DM_THREADS.find((t) => t.id === activeDmThreadId);
+      const box = document.getElementById('dmChatMessages');
+      if (!thread || !box) return;
+      box.innerHTML = thread.messages.map((m) => `
+        <div class="dm-bubble-row ${m.from === 'me' ? 'me' : 'them'}">
+          ${m.from !== 'me' ? `<img class="comment-avatar" src="${thread.avatar}" alt="${thread.name}">` : ''}
+          <div class="dm-bubble">${m.text}</div>
+        </div>
+      `).join('');
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function submitDmMessage(e) {
+      e.preventDefault();
+      const input = document.getElementById('dmInputField');
+      const text = (input.value || '').trim();
+      if (!text) return;
+      const thread = DM_THREADS.find((t) => t.id === activeDmThreadId);
+      if (!thread) return;
+      thread.messages.push({ from: 'me', text });
+      thread.time = '방금 전';
+      input.value = '';
+      renderDmChatMessages();
+      renderDmThreads();
+    }
+
+    // 풀스크린 스토리 뷰어 & 공유 스튜디오 모달 제어
+    let activeStoryIdx = 0;
+    let storyAutoTimer = null;
+
+    function openStoryViewer(startIdx) {
+      activeStoryIdx = startIdx !== undefined ? startIdx : 0;
+      document.getElementById('storyViewerModal').classList.add('open');
+      updateStorySlide();
+    }
+
+    function closeStoryViewer() {
+      clearTimeout(storyAutoTimer);
+      document.getElementById('storyViewerModal').classList.remove('open');
+    }
+
+    function stepStorySlide(delta) {
+      const next = activeStoryIdx + delta;
+      if (next < 0) {
+        activeStoryIdx = 0;
+      } else if (next >= PLACES.length) {
+        closeStoryViewer();
+        return;
+      } else {
+        activeStoryIdx = next;
+      }
+      updateStorySlide();
+    }
+
+    function updateStorySlide() {
+      clearTimeout(storyAutoTimer);
+      const place = PLACES[activeStoryIdx];
+      if (!place) return;
+
+      document.getElementById('storyViewerImg').src = place.photo;
+      document.getElementById('storyViewerAvatar').src = place.authorAvatar || AVATAR_URLS.hyun_seo;
+      document.getElementById('storyViewerPlace').textContent = place.name;
+
+      const mainCompanion = place.companions[0] || '@hyun_seo';
+      const extraCount = Math.max(0, place.companions.length - 1);
+      document.getElementById('storyViewerSub').textContent = extraCount > 0 ? `${mainCompanion} 외 ${extraCount}명` : mainCompanion;
+
+      document.getElementById('storyViewerCaption').textContent = place.comment || '바람은 좀 불었지만 뷰가 탁 트여 있음';
+      document.getElementById('storyViewerMusic').textContent = `♫ ${place.song}`;
+
+      const heartBtn = document.getElementById('storyHeartBtn');
+      if (heartBtn) heartBtn.classList.toggle('liked', Boolean(place.liked));
+
+      const progRow = document.getElementById('storyProgressRow');
+      progRow.innerHTML = PLACES.map((_, i) => `
+        <div class="story-progress-seg">
+          <div class="story-progress-fill" style="width:${i < activeStoryIdx ? '100%' : (i === activeStoryIdx ? '100%' : '0%')}"></div>
+        </div>
+      `).join('');
+
+      storyAutoTimer = setTimeout(() => {
+        stepStorySlide(1);
+      }, 4500);
+    }
+
+    function toggleStoryViewerLike() {
+      const place = PLACES[activeStoryIdx];
+      if (!place) return;
+      place.liked = !place.liked;
+      place.likes += place.liked ? 1 : -1;
+      document.getElementById('storyHeartBtn').classList.toggle('liked', place.liked);
+      renderStoryFeed();
+      if (place.liked) showToast('스토리에 공감했습니다');
+    }
+
+    function handleStoryReplyKey(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = (e.target.value || '').trim();
+        if (!val) return;
+        const place = PLACES[activeStoryIdx];
+        if (place) {
+          place.comments.push({
+            user: '김성원',
+            avatar: AVATAR_URLS.seong_won,
+            text: val
+          });
+          renderStoryFeed();
+        }
+        e.target.value = '';
+        showToast('스토리 답장을 보냈습니다');
+      }
+    }
+
+    function openShareStudioModal(placeIdx) {
+      const target = PLACES[placeIdx !== undefined ? placeIdx : currentPlaceIdx] || PLACES[0];
+      if (target) {
+        const tags = target.companions.join(' ');
+        document.getElementById('instaBgImg').src = target.photo;
+        document.getElementById('instaCompanionBadge').textContent = tags || '@hyun_seo @seong_won';
+        document.getElementById('instaMusicText').textContent = `♫ ${target.song}`;
+        document.getElementById('instaMusicSub').textContent = target.companions.join(' · ') || '@hyun_seo · @seong_won';
+      }
+      document.getElementById('shareStudioModal').classList.add('open');
+    }
+
+    function closeShareStudioModal() {
+      document.getElementById('shareStudioModal').classList.remove('open');
+    }
+
+    function sharePlaceToStoryCard() {
+      closeStoryViewer();
+      openShareStudioModal(activeStoryIdx);
+      showToast('동행자 태그와 함께 공유 스튜디오가 열렸습니다');
+    }
+
+    function selectMemoChip(idx, text) {
+      const place = PLACES[idx];
+      if (!place) return;
+      place.comment = text;
+      renderStoryFeed();
+      focusPlace(idx, false);
+      showToast('메모 저장됨');
+    }
+
+    function openGoogleMapModal(idx) {
+      const place = PLACES[idx !== undefined ? idx : currentPlaceIdx];
+      if (!place) return;
+      document.getElementById('gmapDialogTitle').textContent = place.name;
+      document.getElementById('gmapIframe').src = `https://maps.google.com/maps?q=${place.lat},${place.lng}&hl=ko&z=16&output=embed`;
+      document.getElementById('googleMapDialog').showModal();
+    }
+
+    // Web Audio 사운드 재생
+    let audioCtx = null;
+    let audioTimer = null;
+    let isPlayingAudio = false;
+    let playingPlaceIdx = -1;
+
+    function toggleMusic(idx) {
+      if (isPlayingAudio && playingPlaceIdx === idx) {
+        isPlayingAudio = false;
+        playingPlaceIdx = -1;
+        clearInterval(audioTimer);
+        renderStoryFeed();
+        return;
+      }
+
+      clearInterval(audioTimer);
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!audioCtx) audioCtx = new AudioContextClass();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      isPlayingAudio = true;
+      playingPlaceIdx = idx;
+      renderStoryFeed();
+
+      const freqs = [349.23, 440.0, 523.25, 659.25, 587.33, 523.25];
+      let step = 0;
+
+      const playTone = (f) => {
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f, now);
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.exponentialRampToValueAtTime(0.07, now + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.55);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.58);
+      };
+
+      playTone(freqs[0]);
+      audioTimer = setInterval(() => {
+        step = (step + 1) % freqs.length;
+        playTone(freqs[step]);
+      }, 420);
+    }
+
+    // 4. 탭 3: [사진첩 탭] 다크 갤러리 UI
+    function renderAlbumGrid() {
+      const grid = document.getElementById('albumGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      ALBUM_PHOTOS.forEach((item) => {
+        const card = document.createElement('div');
+        card.className = `album-dark-card ${item.selected ? 'selected' : ''}`;
+        card.onclick = () => {
+          item.selected = !item.selected;
+          renderAlbumGrid();
+        };
+        const fbAttr = item.fallback ? `onerror="if(this.src!==this.dataset.fb)this.src=this.dataset.fb" data-fb="${item.fallback}"` : '';
+        card.innerHTML = `
+          <div class="album-thumb-wrap">
+            <img src="${item.photo}" alt="${item.name}" ${fbAttr}>
+            <span class="check-badge">✓</span>
+          </div>
+          <div class="album-meta-line">
+            ${item.name} <span class="album-meta-time">· ${item.time}</span>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      const count = ALBUM_PHOTOS.filter((x) => x.selected).length;
+      document.getElementById('btnAddPhotos').textContent = `선택한 사진 지도에 추가 (${count})`;
+    }
+
+    function addCheckedPhotosToMap() {
+      let chosen = ALBUM_PHOTOS.filter((x) => x.selected);
+      if (chosen.length === 0) {
+        chosen = [ALBUM_PHOTOS[0]];
+        ALBUM_PHOTOS[0].selected = true;
+      }
+
+      let targetIdx = currentPlaceIdx;
+      chosen.forEach((item) => {
+        const exist = PLACES.findIndex((p) => p.id === item.id);
+        if (exist !== -1) {
+          targetIdx = exist;
+          return;
+        }
+        PLACES.push({
+          id: item.id,
+          name: item.name,
+          day: item.day || 2,
+          companions: item.companions || ['@hyun_seo', '@seong_won'],
+          authorAvatar: AVATAR_URLS.hyun_seo,
+          lat: item.lat,
+          lng: item.lng,
+          time: item.time,
+          song: item.song,
+          photo: item.fallback || item.photo,
+          comment: '',
+          chips: ['사진 찍기 좋았음', '가볍게 둘러보기 괜찮았음', '근처 지나가다 들르기 좋음'],
+          likes: 12,
+          liked: false,
+          comments: [
+            { user: '최현서', avatar: AVATAR_URLS.hyun_seo, text: '여기 사진 분위기 진짜 잘 나왔다' }
+          ]
+        });
+        targetIdx = PLACES.length - 1;
+      });
+
+      activeGroupFilter = 'all';
+      renderStoryBubbles();
+      switchTab('map');
+      setTimeout(() => {
+        renderGroupFilterBar();
+        renderMapMarkers();
+        renderStoryFeed();
+        focusPlace(targetIdx, true);
+        showToast('선택한 사진이 지도에 추가됨');
+      }, 180);
+    }
+
+    // 공유 카드 스튜디오 포맷 전환
+    function switchShareFormat(fmt) {
+      document.getElementById('btnFmtStory').classList.toggle('active', fmt === 'story');
+      document.getElementById('btnFmtPost').classList.toggle('active', fmt === 'post');
+      document.getElementById('instaDomCard').classList.toggle('post-4-5', fmt === 'post');
+    }
+
+    function saveShareImage() {
+      showToast('이미지 저장됨');
+    }
+
+    // 탭 전환 컨트롤러 (globe, map, album, my)
+    function switchTab(tabKey) {
+      const mapping = {
+        globe: ['screenGlobe', 'tabGlobe'],
+        map: ['screenMap', 'tabMap'],
+        album: ['screenAlbum', 'tabAlbum'],
+        my: ['screenMy', 'tabMy']
+      };
+
+      Object.entries(mapping).forEach(([k, [scrId, tabId]]) => {
+        document.getElementById(scrId).classList.toggle('active', k === tabKey);
+        document.getElementById(tabId).classList.toggle('active', k === tabKey);
+      });
+
+      if (tabKey !== 'globe' && globeSheetExpanded) {
+        collapseGlobeSheet();
+      }
+
+      if (tabKey === 'globe') {
+        renderStoryBubbles();
+        renderActivityFeed();
+      } else if (tabKey === 'map') {
+        initMap();
+        setTimeout(() => {
+          if (mapInstance) {
+            mapInstance.invalidateSize();
+            mapInstance.setView([50.0870, 14.4115], 15, { animate: false });
+          }
+          renderGroupFilterBar();
+          renderStoryFeed();
+        }, 150);
+      } else if (tabKey === 'album') {
+        renderAlbumGrid();
+      } else if (tabKey === 'my') {
+        renderAllCompanionLists();
+        renderDmThreads();
+      }
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const el = document.getElementById('toastMsg');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+    }
+
+    function initMapScrollSync() {
+      const scroller = document.getElementById('mapScrollContainer');
+      if (!scroller) return;
+      scroller.addEventListener('scroll', () => {
+        const cards = document.querySelectorAll('.story-magazine-card');
+        if (!cards.length) return;
+        const containerRect = scroller.getBoundingClientRect();
+        const targetY = containerRect.top + containerRect.height * 0.55;
+        let bestIdx = currentPlaceIdx;
+        let bestDist = Infinity;
+        cards.forEach((card) => {
+          const r = card.getBoundingClientRect();
+          const center = (r.top + r.bottom) / 2;
+          const dist = Math.abs(center - targetY);
+          const pIdx = Number(card.dataset.placeIdx);
+          if (dist < bestDist) {
+            bestDist = dist;
+            bestIdx = pIdx;
+          }
+        });
+        if (bestIdx !== currentPlaceIdx) {
+          currentPlaceIdx = bestIdx;
+          const place = PLACES[bestIdx];
+          document.querySelectorAll('.map-photo-pin').forEach((el) => {
+            el.classList.toggle('selected', el.id === `mapPin_${bestIdx}`);
+          });
+          document.querySelectorAll('.story-magazine-card').forEach((el) => {
+            el.classList.toggle('active', Number(el.dataset.placeIdx) === bestIdx);
+          });
+          if (mapInstance && place) {
+            mapInstance.panTo([place.lat, place.lng], { animate: true });
+          }
+        }
+      }, { passive: true });
+    }
+
+    let initialized = false;
+    function boot() {
+      if (initialized) return;
+      initialized = true;
+      initGlobe();
+      renderStoryBubbles();
+      renderActivityFeed();
+      initGlobeDrawerGestures();
+      renderAlbumGrid();
+      renderAllCompanionLists();
+      renderDmThreads();
+      initMapScrollSync();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', boot);
+    } else {
+      boot();
+    }
+    window.addEventListener('load', boot);
+  </script>
+</body>
+</html>
