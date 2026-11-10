@@ -1037,132 +1037,243 @@
         color: #0A0A0A;
       }
 
-      /* =====================================================================
-         탭 3: [사진첩 탭] 다크 갤러리 UI
+/* =====================================================================
+         탭 3: [친구 피드 탭] 친구들의 최근 여행 피드 & 소셜 스트림
          ===================================================================== */
       .album-screen-inner {
-        padding: 52px 16px 16px;
+        padding: 50px 16px 20px;
         display: flex;
         flex-direction: column;
         height: 100%;
+        overflow-y: auto;
+        scrollbar-width: none;
       }
 
-      .album-header-bar {
+      .album-screen-inner::-webkit-scrollbar {
+        display: none;
+      }
+
+      .feed-header-bar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 16px;
+        margin-bottom: 14px;
+        padding: 0 2px;
+        flex-shrink: 0;
       }
 
-      .album-header-title {
-        font-size: 22px;
+      .feed-header-title {
+        font-size: 20px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: var(--text-main);
+      }
+
+      .feed-filter-chips {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        overflow-x: auto;
+        padding-bottom: 12px;
+        scrollbar-width: none;
+        flex-shrink: 0;
+      }
+
+      .feed-filter-chips::-webkit-scrollbar {
+        display: none;
+      }
+
+      .feed-chip {
+        padding: 7px 15px;
+        border-radius: 999px;
+        font-size: 12.5px;
+        font-weight: 600;
+        background: var(--bg-card);
+        color: var(--text-sub);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        white-space: nowrap;
+        flex-shrink: 0;
+        transition: all 0.15s ease;
+      }
+
+      .feed-chip.active {
+        background: #FFFFFF;
+        color: #0A0A0A;
+        font-weight: 700;
+      }
+
+      .friends-feed-list {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        padding-bottom: 16px;
+      }
+
+      .friend-feed-card {
+        background: var(--bg-card);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        border-radius: 22px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+        transition: border-color 0.16s ease, transform 0.16s ease;
+      }
+
+      .friend-feed-card:hover {
+        border-color: rgba(255, 255, 255, 0.09);
+      }
+
+      .friend-feed-author-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 13px 15px 11px;
+      }
+
+      .friend-feed-author-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+      }
+
+      .friend-feed-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 1.5px solid rgba(255, 255, 255, 0.16);
+        background: var(--bg-sub);
+      }
+
+      .friend-feed-name-col {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+      }
+
+      .friend-feed-name {
+        font-size: 13.5px;
         font-weight: 700;
         color: var(--text-main);
       }
 
-      .photo-grid-2col {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-        overflow-y: auto;
-        padding-bottom: 16px;
+      .friend-feed-location-time {
+        font-size: 11px;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 4px;
       }
 
-      .album-dark-card {
-        background: var(--bg-card);
-        border: 1px solid rgba(255, 255, 255, 0.04);
-        border-radius: 16px;
-        padding: 8px;
-        cursor: pointer;
-        transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+      .friend-feed-more-btn {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        font-size: 16px;
+        border-radius: 50%;
+        transition: color 0.15s ease;
       }
 
-      .album-dark-card:hover {
-        border-color: rgba(255, 255, 255, 0.1);
+      .friend-feed-more-btn:hover {
+        color: #FFFFFF;
       }
 
-      .album-dark-card:active {
-        transform: scale(0.98);
-      }
-
-      .album-dark-card.selected {
-        border: 2px solid #FFFFFF;
-        box-shadow: 0 0 16px rgba(255, 255, 255, 0.25);
-      }
-
-      .album-thumb-wrap {
+      .friend-feed-photo-wrap {
         position: relative;
         width: 100%;
-        aspect-ratio: 1 / 1;
-        border-radius: 11px;
+        aspect-ratio: 4 / 3;
+        background: #000000;
         overflow: hidden;
-        background: var(--bg-sub);
       }
 
-      .album-thumb-wrap img {
+      .friend-feed-photo-wrap img {
         width: 100%;
         height: 100%;
         object-fit: cover;
         display: block;
       }
 
-      .check-badge {
+      .feed-tag-badge {
         position: absolute;
-        top: 8px;
-        right: 8px;
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
-        background: rgba(10, 10, 10, 0.65);
-        border: 1.5px solid rgba(255, 255, 255, 0.6);
-        color: transparent;
-        font-size: 12px;
-        font-weight: 700;
+        left: 12px;
+        bottom: 12px;
+        background: rgba(10, 10, 10, 0.72);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 999px;
+        padding: 5px 11px;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: #FFFFFF;
         display: flex;
         align-items: center;
-        justify-content: center;
+        gap: 5px;
       }
 
-      .album-dark-card.selected .check-badge {
-        background: #FFFFFF;
-        border-color: #FFFFFF;
-        color: #0A0A0A;
+      .friend-feed-body {
+        padding: 13px 15px 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
       }
 
-      .album-meta-line {
-        margin-top: 9px;
-        padding: 0 2px;
-        font-size: 12px;
+      .friend-feed-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .friend-feed-actions-left {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .friend-feed-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
         font-weight: 600;
         color: var(--text-main);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        transition: transform 0.15s ease, color 0.15s ease;
       }
 
-      .album-meta-time {
+      .friend-feed-btn.liked {
+        color: var(--heart-red);
+      }
+
+      .friend-feed-btn.liked svg {
+        fill: var(--heart-red);
+        stroke: var(--heart-red);
+      }
+
+      .friend-feed-desc {
+        font-size: 13px;
+        line-height: 1.45;
         color: var(--text-sub);
-        font-weight: 500;
       }
 
-      .floating-pill-cta {
-        margin-top: auto;
-        width: 100%;
-        padding: 16px 24px;
-        border-radius: 999px;
-        background: #FFFFFF;
-        color: #0A0A0A;
-        font-size: 15px;
+      .friend-feed-desc strong {
+        color: var(--text-main);
         font-weight: 700;
-        text-align: center;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-        transition: background-color 0.15s ease, transform 0.15s ease;
+        margin-right: 6px;
       }
 
-      .floating-pill-cta:hover:not(:disabled),
-      .floating-pill-cta:active:not(:disabled) {
-        background: var(--accent-hover);
-        transform: scale(0.98);
+      .friend-feed-comments-link {
+        font-size: 12px;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding-top: 1px;
+      }
+
+      .friend-feed-comments-link:hover {
+        color: var(--text-sub);
       }
 
       /* =====================================================================
@@ -2449,19 +2560,24 @@
       </section>
 
       <!-- ===================================================================
-           탭 3: [사진첩] 다크 갤러리 UI
+           탭 3: [친구 피드] 친구들의 최근 여행 피드 & 소셜 스트림
            =================================================================== -->
-      <section class="screen" id="screenAlbum" aria-label="사진첩">
+      <section class="screen" id="screenAlbum" aria-label="친구 여행 피드">
         <div class="album-screen-inner">
-          <div class="album-header-bar">
-            <h2 class="album-header-title">사진첩</h2>
+          <div class="feed-header-bar">
+            <h2 class="feed-header-title">친구들의 여행 피드</h2>
           </div>
 
-          <div class="photo-grid-2col" id="albumGrid"></div>
+          <!-- 피드 필터 칩 -->
+          <div class="feed-filter-chips" role="tablist">
+            <button type="button" class="feed-chip active" id="chipFeedAll" onclick="filterFriendsFeed('all')">전체 피드</button>
+            <button type="button" class="feed-chip" id="chipFeedPrague" onclick="filterFriendsFeed('prague')">체코 프라하</button>
+            <button type="button" class="feed-chip" id="chipFeedTokyo" onclick="filterFriendsFeed('tokyo')">일본 도쿄</button>
+            <button type="button" class="feed-chip" id="chipFeedCompanion" onclick="filterFriendsFeed('companion')">동행자 소식</button>
+          </div>
 
-          <button type="button" class="floating-pill-cta" id="btnAddPhotos" onclick="addCheckedPhotosToMap()">
-            선택한 사진 지도에 추가 (1)
-          </button>
+          <!-- 친구 피드 카드 목록 -->
+          <div class="friends-feed-list" id="friendsFeedList"></div>
         </div>
       </section>
 
@@ -2707,11 +2823,11 @@
           <line x1="16" y1="6" x2="16" y2="22"></line>
         </svg>
       </button>
-      <button type="button" class="tab-btn" id="tabAlbum" onclick="switchTab('album')" aria-label="사진첩" title="사진첩">
+      <button type="button" class="tab-btn" id="tabAlbum" onclick="switchTab('album')" aria-label="친구 피드" title="친구 피드">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          <circle cx="8.5" cy="8.5" r="1.5"></circle>
-          <polyline points="21 15 16 10 5 21"></polyline>
+          <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+          <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
         </svg>
       </button>
       <button type="button" class="tab-btn" id="tabMy" onclick="switchTab('my')" aria-label="마이" title="마이">
@@ -3868,82 +3984,183 @@
       }, 420);
     }
 
-    // 4. 탭 3: [사진첩 탭] 다크 갤러리 UI
-    function renderAlbumGrid() {
-      const grid = document.getElementById('albumGrid');
-      if (!grid) return;
-      grid.innerHTML = '';
+    // 4. 탭 3: [친구 피드 탭] 친구들의 최근 여행 피드 & 소셜 스트림
+    const FRIENDS_FEED = [
+      {
+        id: 'feed_1',
+        author: '최현서',
+        handle: '@hyun_seo',
+        avatar: AVATAR_URLS.hyun_seo,
+        city: 'prague',
+        location: '체코 프라하 · 댄싱 하우스',
+        time: '34분 전',
+        photo: PHOTO_URLS.dancing,
+        desc: '블타바 강변 따라 걷다가 만난 댄싱 하우스. 노을빛이 강물에 반사되는 순간이 최고였음 🌆',
+        tag: '@hyun_seo · @seong_won',
+        likes: 38,
+        liked: false,
+        commentsCount: 5,
+        isCompanion: true
+      },
+      {
+        id: 'feed_2',
+        author: '송민경',
+        handle: '@min_kyung',
+        avatar: AVATAR_URLS.min_kyung,
+        city: 'prague',
+        location: '체코 프라하 · 레트나 공원',
+        time: '2시간 전',
+        photo: PHOTO_URLS.letna,
+        desc: '프라하 시내와 다리들이 한눈에 다 보이는 뷰포인트. 여기서 마신 맥주 맛 잊지 못해 🍺',
+        tag: '@min_kyung',
+        likes: 54,
+        liked: true,
+        commentsCount: 9,
+        isCompanion: true
+      },
+      {
+        id: 'feed_3',
+        author: '강도윤',
+        handle: '@doyun_k',
+        avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=160&h=160&q=80',
+        city: 'tokyo',
+        location: '일본 도쿄 · 시부야 스카이',
+        time: '5시간 전',
+        photo: PHOTO_URLS.tokyo,
+        desc: '도쿄의 화려한 야경. 날씨가 맑아서 후지산 실루엣까지 멀리 선명하게 보였던 날 🗼',
+        tag: '@doyun_k',
+        likes: 82,
+        liked: false,
+        commentsCount: 14,
+        isCompanion: false
+      },
+      {
+        id: 'feed_4',
+        author: '정유진',
+        handle: '@yujin_travel',
+        avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=160&h=160&q=80',
+        city: 'prague',
+        location: '체코 프라하 · 존 레논 벽',
+        time: '어제',
+        photo: LENNON_FALLBACK_URL,
+        desc: '각국의 여행자들이 남긴 평화의 메시지들. 자유로운 색채가 골목 가득 채워져 있음 🎨',
+        tag: '@yujin_travel',
+        likes: 47,
+        liked: false,
+        commentsCount: 7,
+        isCompanion: false
+      }
+    ];
 
-      ALBUM_PHOTOS.forEach((item) => {
-        const card = document.createElement('div');
-        card.className = `album-dark-card ${item.selected ? 'selected' : ''}`;
-        card.onclick = () => {
-          item.selected = !item.selected;
-          renderAlbumGrid();
-        };
-        const fbAttr = item.fallback ? `onerror="if(this.src!==this.dataset.fb)this.src=this.dataset.fb" data-fb="${item.fallback}"` : '';
-        card.innerHTML = `
-          <div class="album-thumb-wrap">
-            <img src="${item.photo}" alt="${item.name}" ${fbAttr}>
-            <span class="check-badge">✓</span>
-          </div>
-          <div class="album-meta-line">
-            ${item.name} <span class="album-meta-time">· ${item.time}</span>
-          </div>
-        `;
-        grid.appendChild(card);
+    let activeFriendsFeedFilter = 'all';
+
+    function filterFriendsFeed(filterKey) {
+      activeFriendsFeedFilter = filterKey;
+      document.querySelectorAll('.feed-chip').forEach((btn) => {
+        btn.classList.toggle('active', btn.id === `chipFeed${filterKey.charAt(0).toUpperCase() + filterKey.slice(1)}`);
       });
-
-      const count = ALBUM_PHOTOS.filter((x) => x.selected).length;
-      document.getElementById('btnAddPhotos').textContent = `선택한 사진 지도에 추가 (${count})`;
+      renderFriendsFeed();
     }
 
-    function addCheckedPhotosToMap() {
-      let chosen = ALBUM_PHOTOS.filter((x) => x.selected);
-      if (chosen.length === 0) {
-        chosen = [ALBUM_PHOTOS[0]];
-        ALBUM_PHOTOS[0].selected = true;
-      }
+    function renderFriendsFeed() {
+      const container = document.getElementById('friendsFeedList');
+      if (!container) return;
 
-      let targetIdx = currentPlaceIdx;
-      chosen.forEach((item) => {
-        const exist = PLACES.findIndex((p) => p.id === item.id);
-        if (exist !== -1) {
-          targetIdx = exist;
-          return;
-        }
-        PLACES.push({
-          id: item.id,
-          name: item.name,
-          day: item.day || 2,
-          companions: item.companions || ['@hyun_seo', '@seong_won'],
-          authorAvatar: AVATAR_URLS.hyun_seo,
-          lat: item.lat,
-          lng: item.lng,
-          time: item.time,
-          song: item.song,
-          photo: item.fallback || item.photo,
-          comment: '',
-          chips: ['사진 찍기 좋았음', '가볍게 둘러보기 괜찮았음', '근처 지나가다 들르기 좋음'],
-          likes: 12,
-          liked: false,
-          comments: [
-            { user: '최현서', avatar: AVATAR_URLS.hyun_seo, text: '여기 사진 분위기 진짜 잘 나왔다' }
-          ]
-        });
-        targetIdx = PLACES.length - 1;
+      const filtered = FRIENDS_FEED.filter((item) => {
+        if (activeFriendsFeedFilter === 'all') return true;
+        if (activeFriendsFeedFilter === 'prague') return item.city === 'prague';
+        if (activeFriendsFeedFilter === 'tokyo') return item.city === 'tokyo';
+        if (activeFriendsFeedFilter === 'companion') return item.isCompanion;
+        return true;
       });
 
-      activeGroupFilter = 'all';
-      renderStoryBubbles();
-      switchTab('map');
-      setTimeout(() => {
-        renderGroupFilterBar();
-        renderMapMarkers();
-        renderStoryFeed();
-        focusPlace(targetIdx, true);
-        showToast('선택한 사진이 지도에 추가됨');
-      }, 180);
+      if (filtered.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:40px 0; color:var(--text-muted); font-size:13px;">해당 카테고리의 여행 피드가 없습니다.</div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map((item, idx) => `
+        <article class="friend-feed-card" id="${item.id}">
+          <div class="friend-feed-author-row">
+            <div class="friend-feed-author-left" onclick="showToast('${item.author}님의 프로필을 확인합니다')">
+              <img class="friend-feed-avatar" src="${item.avatar}" alt="${item.author}">
+              <div class="friend-feed-name-col">
+                <span class="friend-feed-name">${item.author}</span>
+                <span class="friend-feed-location-time">
+                  <span>${item.location}</span>
+                  <span>·</span>
+                  <span>${item.time}</span>
+                </span>
+              </div>
+            </div>
+            <button type="button" class="friend-feed-more-btn" onclick="openShareStudioModal()" aria-label="옵션">···</button>
+          </div>
+
+          <div class="friend-feed-photo-wrap">
+            <img src="${item.photo}" alt="${item.location}">
+            <div class="feed-tag-badge">
+              ${SVG_ICONS.user}
+              <span>${item.tag}</span>
+            </div>
+          </div>
+
+          <div class="friend-feed-body">
+            <div class="friend-feed-actions">
+              <div class="friend-feed-actions-left">
+                <button type="button" class="friend-feed-btn ${item.liked ? 'liked' : ''}" onclick="toggleFriendFeedLike(${idx})">
+                  ${SVG_ICONS.heart}
+                  <span id="feedLikeCount_${idx}">${item.likes}</span>
+                </button>
+                <button type="button" class="friend-feed-btn" onclick="openFeedCommentDrawer(${idx})">
+                  ${SVG_ICONS.comment}
+                  <span>${item.commentsCount}</span>
+                </button>
+                <button type="button" class="friend-feed-btn" onclick="shareFeedStory(${idx})">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <p class="friend-feed-desc">
+              <strong>${item.author}</strong>${item.desc}
+            </p>
+
+            <span class="friend-feed-comments-link" onclick="openFeedCommentDrawer(${idx})">
+              댓글 ${item.commentsCount}개 모두 보기
+            </span>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    function toggleFriendFeedLike(idx) {
+      const item = FRIENDS_FEED[idx];
+      if (!item) return;
+      item.liked = !item.liked;
+      item.likes += item.liked ? 1 : -1;
+      renderFriendsFeed();
+      if (item.liked) showToast(`${item.author}님의 피드에 공감했습니다`);
+    }
+
+    function openFeedCommentDrawer(idx) {
+      const item = FRIENDS_FEED[idx];
+      if (!item) return;
+      activeCommentPlaceIdx = 0;
+      document.getElementById('commentSheetTitle').textContent = `${item.author}님의 피드 댓글`;
+      renderCommentDrawerList();
+      document.getElementById('commentSheetOverlay').classList.add('open');
+    }
+
+    function shareFeedStory(idx) {
+      const item = FRIENDS_FEED[idx];
+      if (!item) return;
+      document.getElementById('instaBgImg').src = item.photo;
+      document.getElementById('instaCompanionBadge').textContent = item.tag;
+      document.getElementById('shareStudioModal').classList.add('open');
+      showToast('피드 사진이 공유 스튜디오에 로드되었습니다');
     }
 
     // 공유 카드 스튜디오 포맷 전환
@@ -3989,7 +4206,7 @@
           renderStoryFeed();
         }, 150);
       } else if (tabKey === 'album') {
-        renderAlbumGrid();
+        renderFriendsFeed();
       } else if (tabKey === 'my') {
         renderAllCompanionLists();
         renderDmThreads();
@@ -4049,7 +4266,7 @@
       renderStoryBubbles();
       renderActivityFeed();
       initGlobeDrawerGestures();
-      renderAlbumGrid();
+      renderFriendsFeed();
       renderAllCompanionLists();
       renderDmThreads();
       initMapScrollSync();
