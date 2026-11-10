@@ -23,6 +23,11 @@
         border: none;
         cursor: pointer;
         user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+      }
+      button:active {
+        transform: scale(0.97);
       }
       input {
         font: inherit;
@@ -39,7 +44,8 @@
         --bg-app: #0A0A0A;
         --bg-card: #141414;
         --bg-sub: #1F1F1F;
-        --border-dark: rgba(255, 255, 255, 0.09);
+        --border-dark: rgba(255, 255, 255, 0.05);
+        --border-subtle: rgba(255, 255, 255, 0.035);
         --shadow-deep: 0 10px 30px rgba(0, 0, 0, 0.7);
         --text-main: #F5F5F5;
         --text-sub: #A3A3A3;
@@ -224,30 +230,99 @@
         border-top-color: #FFFFFF;
       }
 
-      /* 지구본 하단 다크 바텀시트 (스토리 버블 + 여행 요약 통합) */
+      /* 알림 드로어 확장 시 배경 딤 & 블러 */
+      .globe-sheet-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.52);
+        backdrop-filter: blur(5px);
+        opacity: 0;
+        pointer-events: none;
+        z-index: 24;
+        transition: opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .globe-sheet-backdrop.active {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      /* 지구본 하단 인터랙티브 알림 드로어 (Peek View <-> Expanded) */
       .globe-bottom-sheet {
         position: absolute;
         left: 0;
         right: 0;
         bottom: 0;
         z-index: 25;
-        background: rgba(20, 20, 20, 0.94);
-        backdrop-filter: blur(20px);
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 26px 26px 0 0;
-        padding: 10px 18px 18px;
-        box-shadow: 0 -14px 36px rgba(0, 0, 0, 0.85);
+        background: rgba(16, 16, 16, 0.94);
+        backdrop-filter: blur(28px);
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 28px 28px 0 0;
+        box-shadow: 0 -14px 40px rgba(0, 0, 0, 0.88);
+        padding: 8px 18px 22px;
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 12px;
+        max-height: 228px;
+        overflow: hidden;
+        transition: max-height 0.38s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.25s ease, box-shadow 0.25s ease;
+      }
+
+      .globe-bottom-sheet.expanded {
+        max-height: 600px;
+        background: rgba(13, 13, 13, 0.98);
+        overflow-y: auto;
+        box-shadow: 0 -18px 48px rgba(0, 0, 0, 0.95);
+        scrollbar-width: none;
+      }
+
+      .globe-bottom-sheet.expanded::-webkit-scrollbar {
+        display: none;
+      }
+
+      .sheet-grabber-zone {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        padding: 3px 0 2px;
+        user-select: none;
       }
 
       .sheet-Grabber {
         width: 36px;
         height: 4px;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.22);
-        margin: 2px auto 0;
+        background: rgba(255, 255, 255, 0.28);
+        transition: background-color 0.2s ease, transform 0.2s ease;
+      }
+
+      .sheet-grabber-zone:hover .sheet-Grabber {
+        background: rgba(255, 255, 255, 0.55);
+        transform: scaleX(1.12);
+      }
+
+      .drawer-peek-hint {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+      }
+
+      .globe-bottom-sheet.expanded .drawer-peek-hint {
+        display: none;
+      }
+
+      .globe-peek-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        flex-shrink: 0;
       }
 
       /* 원형 스토리 하이라이트 버블 바 */
@@ -281,7 +356,7 @@
         border: 1.5px solid rgba(255, 255, 255, 0.88);
         background: var(--bg-card);
         position: relative;
-        transition: transform 0.15s ease;
+        transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
       }
 
       .story-bubble-item:hover .story-bubble-ring {
@@ -312,7 +387,7 @@
         justify-content: space-between;
         gap: 12px;
         padding-top: 10px;
-        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
       }
 
       .globe-card-info {
@@ -324,6 +399,7 @@
         font-size: 16px;
         font-weight: 700;
         color: var(--text-main);
+        letter-spacing: -0.01em;
       }
 
       .globe-card-meta {
@@ -333,21 +409,165 @@
       }
 
       .globe-card-btn {
-        padding: 10px 16px;
+        padding: 9px 16px;
         border-radius: 999px;
         background: #FFFFFF;
         color: #0A0A0A;
         font-size: 13px;
         font-weight: 700;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
         flex-shrink: 0;
-        transition: background-color 0.15s ease, transform 0.15s ease;
       }
 
-      .globe-card-btn:hover:not(:disabled),
-      .globe-card-btn:active:not(:disabled) {
+      .globe-card-btn:hover:not(:disabled) {
         background: var(--accent-hover);
-        transform: scale(0.98);
+      }
+
+      /* 확장 상태: 친구들의 최근 여행 활동 및 알림 피드 드로어 */
+      .globe-activity-drawer {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .globe-bottom-sheet.expanded .globe-activity-drawer {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .globe-activity-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 2px 2px 0;
+      }
+
+      .globe-activity-title-group {
+        display: flex;
+        align-items: baseline;
+        gap: 7px;
+      }
+
+      .globe-activity-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-main);
+        letter-spacing: -0.01em;
+      }
+
+      .globe-activity-sub {
+        font-size: 11.5px;
+        color: var(--text-muted);
+      }
+
+      .globe-activity-count-badge {
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-sub);
+      }
+
+      .globe-activity-list {
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+        padding-bottom: 6px;
+      }
+
+      .activity-feed-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        border-radius: 17px;
+        transition: background-color 0.16s ease, border-color 0.16s ease;
+      }
+
+      .activity-feed-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.08);
+      }
+
+      .activity-feed-item:active {
+        transform: scale(0.985);
+      }
+
+      .activity-feed-left {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .activity-feed-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: var(--bg-sub);
+        flex-shrink: 0;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .activity-feed-content {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .activity-feed-text {
+        font-size: 12.5px;
+        line-height: 1.4;
+        color: var(--text-sub);
+        word-break: keep-all;
+      }
+
+      .activity-feed-user {
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .activity-feed-target {
+        color: #F5F5F5;
+        font-weight: 600;
+      }
+
+      .activity-feed-time {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 3px;
+      }
+
+      .btn-activity-action {
+        padding: 6px 13px;
+        border-radius: 999px;
+        background: #FFFFFF;
+        color: #0A0A0A;
+        font-size: 11.5px;
+        font-weight: 700;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+      }
+
+      .btn-activity-action:hover {
+        background: var(--accent-hover);
+      }
+
+      .btn-activity-action.following {
+        background: var(--bg-sub);
+        color: var(--text-sub);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: none;
       }
 
       /* =====================================================================
@@ -534,7 +754,7 @@
         z-index: 10;
         margin-top: -24px;
         background: var(--bg-app);
-        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: 28px 28px 0 0;
         box-shadow: 0 -16px 36px rgba(0, 0, 0, 0.85);
         padding: 12px 18px 36px;
@@ -584,19 +804,29 @@
         gap: 20px;
       }
 
-      /* 장소별 사진 카드 */
+      /* 장소별 사진 카드 (부드러운 다크 서피스 & 미세 보더) */
       .story-magazine-card {
         background: var(--bg-card);
+        border: 1px solid rgba(255, 255, 255, 0.04);
         border-radius: 22px;
         overflow: hidden;
-        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
         cursor: pointer;
-        transition: transform 0.18s ease, box-shadow 0.18s ease;
+        transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease, border-color 0.18s ease;
         flex-shrink: 0;
       }
 
+      .story-magazine-card:hover {
+        border-color: rgba(255, 255, 255, 0.08);
+      }
+
+      .story-magazine-card:active {
+        transform: scale(0.985);
+      }
+
       .story-magazine-card.active {
-        box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.85), 0 14px 34px rgba(0, 0, 0, 0.75);
+        border-color: rgba(255, 255, 255, 0.28);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6), 0 12px 32px rgba(0, 0, 0, 0.7);
       }
 
       .story-card-photo {
@@ -846,11 +1076,19 @@
 
       .album-dark-card {
         background: var(--bg-card);
-        border: 1.5px solid var(--border-dark);
+        border: 1px solid rgba(255, 255, 255, 0.04);
         border-radius: 16px;
         padding: 8px;
         cursor: pointer;
-        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+      }
+
+      .album-dark-card:hover {
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+
+      .album-dark-card:active {
+        transform: scale(0.98);
       }
 
       .album-dark-card.selected {
@@ -934,14 +1172,14 @@
       }
 
       /* =====================================================================
-         탭 4: [마이] 페이지 (내 프로필 · 친구 추가 · 팔로우 · DM 메시지 허브)
+         탭 4: [마이] 페이지 — 인스타그램 감성의 극단적 미니멀 프로필 & 리스트
          ===================================================================== */
       .my-screen-inner {
-        padding: 50px 18px 24px;
+        padding: 50px 18px 26px;
         display: flex;
         flex-direction: column;
         height: 100%;
-        gap: 16px;
+        gap: 18px;
         overflow-y: auto;
         scrollbar-width: none;
       }
@@ -950,74 +1188,71 @@
         display: none;
       }
 
-      .my-profile-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border-dark);
-        border-radius: 20px;
-        padding: 16px;
+      /* 1. 상단 프로필 헤더 (불필요한 회색 사각 박스를 제거한 인스타 스타일) */
+      .my-profile-header {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 12px;
+        gap: 15px;
+        padding: 4px 2px;
         flex-shrink: 0;
       }
 
-      .my-profile-left {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .my-avatar-52 {
-        width: 52px;
-        height: 52px;
+      .my-avatar-60 {
+        width: 58px;
+        height: 58px;
         border-radius: 50%;
         object-fit: cover;
-        border: 1.5px solid rgba(255, 255, 255, 0.25);
+        border: 1.5px solid rgba(255, 255, 255, 0.18);
         background: var(--bg-sub);
         flex-shrink: 0;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      }
+
+      .my-profile-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .my-name-line {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
       }
 
       .my-name {
-        font-size: 16px;
+        font-size: 18px;
         font-weight: 700;
         color: var(--text-main);
+        letter-spacing: -0.02em;
       }
 
       .my-handle {
-        font-size: 12px;
+        font-size: 12.5px;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+
+      /* 인스타 스타일 1줄 스탯 라인 (도시 4 · 추억 16 · 친구 12) */
+      .my-stats-compact {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
         color: var(--text-sub);
-        margin-top: 2px;
       }
 
-      .my-stats-group {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .my-stat-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 2px;
-      }
-
-      .my-stat-num {
-        font-size: 14px;
-        font-weight: 700;
+      .my-stats-compact strong {
         color: #FFFFFF;
+        font-weight: 700;
+        margin-left: 2px;
       }
 
-      .my-stat-label {
+      .stat-bullet {
+        color: rgba(255, 255, 255, 0.22);
         font-size: 11px;
-        color: var(--text-sub);
-      }
-
-      .my-stat-divider {
-        width: 1px;
-        height: 22px;
-        background: rgba(255, 255, 255, 0.08);
       }
 
       /* 서브 탭 스위처 & + 친구 추가 버튼 */
@@ -1032,7 +1267,7 @@
       .my-subtab-group {
         display: flex;
         background: var(--bg-card);
-        border: 1px solid var(--border-dark);
+        border: 1px solid rgba(255, 255, 255, 0.05);
         border-radius: 999px;
         padding: 3px;
         gap: 3px;
@@ -1044,7 +1279,6 @@
         font-size: 12px;
         font-weight: 600;
         color: var(--text-sub);
-        transition: all 0.15s ease;
       }
 
       .my-subtab-btn.active {
@@ -1056,16 +1290,16 @@
       .btn-add-friend-pill {
         padding: 7px 13px;
         border-radius: 999px;
-        background: var(--bg-sub);
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: var(--bg-card);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         color: #FFFFFF;
         font-size: 12px;
-        font-weight: 700;
-        transition: background-color 0.15s ease;
+        font-weight: 600;
       }
 
       .btn-add-friend-pill:hover {
-        background: #2B2B2B;
+        background: var(--bg-sub);
+        border-color: rgba(255, 255, 255, 0.14);
       }
 
       /* 아이디로 친구 추가 검색 인풋 바 */
@@ -1074,7 +1308,7 @@
         align-items: center;
         gap: 8px;
         background: var(--bg-card);
-        border: 1px solid rgba(255, 255, 255, 0.16);
+        border: 1px solid rgba(255, 255, 255, 0.12);
         border-radius: 14px;
         padding: 8px 10px 8px 14px;
         flex-shrink: 0;
@@ -1104,41 +1338,60 @@
         font-weight: 700;
       }
 
-      /* 친구 목록 카드 섹션 */
+      /* 친구 목록 & DM 목록 영역: 답답한 카드 테두리를 없애고 여백을 준 모던 리스트 */
       .my-section-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border-dark);
-        border-radius: 20px;
-        padding: 15px 16px;
+        background: transparent;
+        border: none;
+        padding: 0;
         display: flex;
         flex-direction: column;
-        gap: 13px;
+        gap: 12px;
         flex-shrink: 0;
       }
 
       .my-section-title {
-        font-size: 13px;
-        font-weight: 700;
-        color: var(--text-sub);
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--text-muted);
+        letter-spacing: -0.01em;
+        padding-left: 2px;
       }
 
-      .companion-follow-list {
+      .companion-follow-list,
+      .dm-thread-list {
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 10px;
       }
 
-      .companion-follow-item {
+      .companion-follow-item,
+      .dm-thread-item {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 12px;
+        padding: 13px 15px;
+        background: var(--bg-card);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        border-radius: 18px;
+        transition: transform 0.16s ease, background-color 0.16s ease, border-color 0.16s ease;
+      }
+
+      .companion-follow-item:hover,
+      .dm-thread-item:hover {
+        background: #181818;
+        border-color: rgba(255, 255, 255, 0.08);
+      }
+
+      .companion-follow-item:active,
+      .dm-thread-item:active {
+        transform: scale(0.985);
       }
 
       .companion-user-left {
         display: flex;
         align-items: center;
-        gap: 11px;
+        gap: 12px;
         min-width: 0;
       }
 
@@ -1148,7 +1401,7 @@
         border-radius: 50%;
         object-fit: cover;
         background: var(--bg-sub);
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         flex-shrink: 0;
       }
 
@@ -1173,42 +1426,18 @@
         background: #FFFFFF;
         color: #0A0A0A;
         border: 1px solid #FFFFFF;
-        transition: all 0.15s ease;
       }
 
       .btn-follow-toggle.following {
         background: var(--bg-sub);
-        color: var(--text-main);
-        border: 1px solid rgba(255, 255, 255, 0.22);
-      }
-
-      /* 최근 메시지 (DM) 영역 */
-      .dm-thread-list {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-
-      .dm-thread-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 11px;
-        padding: 8px 10px;
-        border-radius: 14px;
-        background: var(--bg-sub);
-        cursor: pointer;
-        transition: background-color 0.15s ease;
-      }
-
-      .dm-thread-item:hover {
-        background: #272727;
+        color: var(--text-sub);
+        border-color: rgba(255, 255, 255, 0.12);
       }
 
       .dm-thread-left {
         display: flex;
         align-items: center;
-        gap: 11px;
+        gap: 12px;
         min-width: 0;
         flex: 1;
       }
@@ -1219,13 +1448,13 @@
       }
 
       .dm-thread-name {
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 700;
         color: var(--text-main);
       }
 
       .dm-thread-preview {
-        font-size: 12px;
+        font-size: 12.5px;
         color: var(--text-sub);
         margin-top: 2px;
         white-space: nowrap;
@@ -1235,9 +1464,8 @@
 
       .dm-thread-right {
         display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 5px;
+        align-items: center;
+        gap: 8px;
         flex-shrink: 0;
       }
 
@@ -1957,19 +2185,45 @@
 
         <div id="globeContainer"></div>
 
-        <div class="globe-bottom-sheet">
-          <div class="sheet-Grabber"></div>
+        <!-- 알림 드로어 확장 시 배경 딤 -->
+        <div class="globe-sheet-backdrop" id="globeSheetBackdrop" onclick="collapseGlobeSheet()"></div>
 
-          <!-- 원형 스토리 하이라이트 버블 바 -->
-          <div class="story-bubbles-bar" id="storyBubblesBar"></div>
-
-          <!-- 하단 여행 요약 박스 -->
-          <div class="globe-summary-row">
-            <div class="globe-card-info">
-              <h2 class="globe-card-title" id="globeCardTitle">체코 프라하</h2>
-              <p class="globe-card-meta" id="globeCardMeta">2026.12.20 - 12.21 · 4곳</p>
+        <!-- 지구본 하단 인터랙티브 알림 드로어 시트 -->
+        <div class="globe-bottom-sheet" id="globeBottomSheet">
+          <div class="sheet-grabber-zone" id="globeGrabberZone" onclick="toggleGlobeSheet()">
+            <div class="sheet-Grabber"></div>
+            <div class="drawer-peek-hint" id="drawerPeekHint">
+              <span>위로 올려 실시간 알림 피드 보기</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="18 15 12 9 6 15"></polyline>
+              </svg>
             </div>
-            <button type="button" class="globe-card-btn" onclick="switchTab('map')">지도 보기</button>
+          </div>
+
+          <!-- 1. 기본 Peek 영역: 스토리 버블 + 프라하 요약 카드 -->
+          <div class="globe-peek-wrap">
+            <div class="story-bubbles-bar" id="storyBubblesBar"></div>
+
+            <div class="globe-summary-row">
+              <div class="globe-card-info">
+                <h2 class="globe-card-title" id="globeCardTitle">체코 프라하</h2>
+                <p class="globe-card-meta" id="globeCardMeta">2026.12.20 - 12.21 · 4곳</p>
+              </div>
+              <button type="button" class="globe-card-btn" onclick="switchTab('map')">지도 보기</button>
+            </div>
+          </div>
+
+          <!-- 2. 확장 상태: 친구들의 최근 여행 활동 및 알림 피드 -->
+          <div class="globe-activity-drawer" id="globeActivityDrawer">
+            <div class="globe-activity-head">
+              <div class="globe-activity-title-group">
+                <h3 class="globe-activity-title">친구들의 최근 여행 활동</h3>
+                <span class="globe-activity-sub">실시간 알림 피드</span>
+              </div>
+              <span class="globe-activity-count-badge">4건</span>
+            </div>
+
+            <div class="globe-activity-list" id="globeActivityList"></div>
           </div>
         </div>
       </section>
@@ -2044,30 +2298,20 @@
            =================================================================== -->
       <section class="screen" id="screenMy" aria-label="마이">
         <div class="my-screen-inner">
-          <!-- 1. 내 프로필 & 스탯 카드 -->
-          <div class="my-profile-card">
-            <div class="my-profile-left">
-              <img class="my-avatar-52" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=160&h=160&q=80" alt="김성원">
-              <div>
-                <div class="my-name">김성원</div>
-                <div class="my-handle">@seong_won</div>
+          <!-- 1. 내 프로필 & 스탯 헤더 (인스타그램 감성 미니멀 헤더) -->
+          <div class="my-profile-header">
+            <img class="my-avatar-60" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=160&h=160&q=80" alt="김성원">
+            <div class="my-profile-meta">
+              <div class="my-name-line">
+                <h2 class="my-name">김성원</h2>
+                <span class="my-handle">@seong_won</span>
               </div>
-            </div>
-
-            <div class="my-stats-group">
-              <div class="my-stat-item">
-                <span class="my-stat-num">4</span>
-                <span class="my-stat-label">도시</span>
-              </div>
-              <div class="my-stat-divider"></div>
-              <div class="my-stat-item">
-                <span class="my-stat-num" id="myRecordStatCount">16</span>
-                <span class="my-stat-label">기록</span>
-              </div>
-              <div class="my-stat-divider"></div>
-              <div class="my-stat-item">
-                <span class="my-stat-num" id="myFriendStatCount">12</span>
-                <span class="my-stat-label">친구</span>
+              <div class="my-stats-compact">
+                <span>도시 <strong>4</strong></span>
+                <span class="stat-bullet">·</span>
+                <span>추억 <strong id="myRecordStatCount">16</strong></span>
+                <span class="stat-bullet">·</span>
+                <span>친구 <strong id="myFriendStatCount">12</strong></span>
               </div>
             </div>
           </div>
@@ -2094,7 +2338,7 @@
           </div>
 
           <!-- 4. 최근 메시지 (DM) 영역 -->
-          <div class="my-section-card" id="myDmSection">
+          <div class="my-section-card" id="myDmSection" style="display: none;">
             <div class="my-section-title">최근 메시지 (DM)</div>
             <div class="dm-thread-list" id="myDmThreadList"></div>
           </div>
@@ -2373,6 +2617,53 @@
         sub: '함께 아는 친구',
         avatar: AVATAR_URLS.san_ha,
         following: false
+      }
+    ];
+
+    // 친구들의 최근 여행 활동 및 실시간 알림 피드 데이터
+    const ACTIVITY_FEED = [
+      {
+        id: 'act1',
+        user: '최현서',
+        avatar: AVATAR_URLS.hyun_seo,
+        targetDesc: "'프라하 성' 사진에 댓글",
+        actionTail: '을 남겼습니다.',
+        time: '방금 전',
+        btnText: '보기',
+        type: 'comment',
+        placeIdx: 0
+      },
+      {
+        id: 'act2',
+        user: '송민경',
+        avatar: AVATAR_URLS.min_kyung,
+        targetDesc: '새로운 체코 여행 앨범',
+        actionTail: '을 공유했습니다.',
+        time: '12분 전',
+        btnText: '보기',
+        type: 'album'
+      },
+      {
+        id: 'act3',
+        user: '박성희',
+        avatar: AVATAR_URLS.seong_hee,
+        targetDesc: '회원님을 팔로우',
+        actionTail: '하기 시작했습니다.',
+        time: '1시간 전',
+        btnText: '맞팔로우',
+        type: 'follow',
+        userIdx: 2
+      },
+      {
+        id: 'act4',
+        user: '이산하',
+        avatar: AVATAR_URLS.san_ha,
+        targetDesc: "'카를교' 사진",
+        actionTail: '을 좋아합니다.',
+        time: '3시간 전',
+        btnText: '보기',
+        type: 'like',
+        placeIdx: 1
       }
     ];
 
@@ -2847,6 +3138,125 @@
     }
 
     // 동행자 & 친구 팔로우 시트 제어 + [마이] 탭 동기화
+    // 지구본 하단 인터랙티브 알림 드로어 & 활동 피드 제어
+    let globeSheetExpanded = false;
+
+    function toggleGlobeSheet(force) {
+      const sheet = document.getElementById('globeBottomSheet');
+      const backdrop = document.getElementById('globeSheetBackdrop');
+      if (!sheet) return;
+      globeSheetExpanded = force !== undefined ? force : !globeSheetExpanded;
+      sheet.classList.toggle('expanded', globeSheetExpanded);
+      if (backdrop) backdrop.classList.toggle('active', globeSheetExpanded);
+      if (globeSheetExpanded) {
+        renderActivityFeed();
+      }
+    }
+
+    function collapseGlobeSheet() {
+      toggleGlobeSheet(false);
+    }
+
+    function expandGlobeSheet() {
+      toggleGlobeSheet(true);
+    }
+
+    function renderActivityFeed() {
+      const list = document.getElementById('globeActivityList');
+      if (!list) return;
+      list.innerHTML = ACTIVITY_FEED.map((item, idx) => {
+        const isFollowing = item.type === 'follow' && COMPANION_USERS[item.userIdx] && COMPANION_USERS[item.userIdx].following;
+        const btnLabel = item.type === 'follow' ? (isFollowing ? '팔로잉' : '맞팔로우') : item.btnText;
+        const btnClass = isFollowing ? 'btn-activity-action following' : 'btn-activity-action';
+        return `
+          <div class="activity-feed-item">
+            <div class="activity-feed-left">
+              <img class="activity-feed-avatar" src="${item.avatar}" alt="${item.user}">
+              <div class="activity-feed-content">
+                <div class="activity-feed-text">
+                  <span class="activity-feed-user">${item.user}</span>님이 <span class="activity-feed-target">${item.targetDesc}</span>${item.actionTail}
+                </div>
+                <div class="activity-feed-time">${item.time}</div>
+              </div>
+            </div>
+            <button type="button" class="${btnClass}" onclick="handleActivityAction(${idx})">${btnLabel}</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function handleActivityAction(idx) {
+      const item = ACTIVITY_FEED[idx];
+      if (!item) return;
+
+      if (item.type === 'comment') {
+        collapseGlobeSheet();
+        switchTab('map');
+        setTimeout(() => {
+          focusPlace(item.placeIdx, true);
+          openCommentSheet(item.placeIdx);
+          showToast(`${item.user}님의 댓글을 확인합니다`);
+        }, 180);
+      } else if (item.type === 'album') {
+        collapseGlobeSheet();
+        switchTab('album');
+        showToast(`${item.user}님이 공유한 사진첩으로 이동합니다`);
+      } else if (item.type === 'follow') {
+        toggleUserFollow(item.userIdx);
+        renderActivityFeed();
+      } else if (item.type === 'like') {
+        collapseGlobeSheet();
+        switchTab('map');
+        setTimeout(() => {
+          focusPlace(item.placeIdx, true);
+          showToast(`${item.user}님이 좋아한 장소로 이동합니다`);
+        }, 180);
+      }
+    }
+
+    function initGlobeDrawerGestures() {
+      const sheet = document.getElementById('globeBottomSheet');
+      if (!sheet) return;
+
+      let startY = 0;
+      let isDragging = false;
+
+      sheet.addEventListener('touchstart', (e) => {
+        if (!e.touches || !e.touches[0]) return;
+        startY = e.touches[0].clientY;
+        isDragging = true;
+      }, { passive: true });
+
+      sheet.addEventListener('touchmove', (e) => {
+        if (!isDragging || !e.touches || !e.touches[0]) return;
+        const currentY = e.touches[0].clientY;
+        const diff = currentY - startY;
+
+        // 아래로 스와이프 (diff > 45) && 확장 상태 && 스크롤 상단 -> 닫기
+        if (diff > 45 && globeSheetExpanded && sheet.scrollTop <= 0) {
+          collapseGlobeSheet();
+          isDragging = false;
+        }
+        // 위로 스와이프 (diff < -35) && 닫힌 상태 -> 열기
+        else if (diff < -35 && !globeSheetExpanded) {
+          expandGlobeSheet();
+          isDragging = false;
+        }
+      }, { passive: true });
+
+      sheet.addEventListener('touchend', () => {
+        isDragging = false;
+      }, { passive: true });
+
+      sheet.addEventListener('wheel', (e) => {
+        if (!globeSheetExpanded && e.deltaY > 15) {
+          expandGlobeSheet();
+        } else if (globeSheetExpanded && e.deltaY < -20 && sheet.scrollTop <= 0) {
+          collapseGlobeSheet();
+        }
+      }, { passive: true });
+    }
+
     function openCompanionSheet() {
       renderAllCompanionLists();
       document.getElementById('companionSheetOverlay').classList.add('open');
@@ -2888,6 +3298,7 @@
       if (!user) return;
       user.following = !user.following;
       renderAllCompanionLists();
+      renderActivityFeed();
       showToast(user.following ? `${user.handle} 님을 팔로우합니다` : `${user.handle} 님 팔로우를 취소했습니다`);
     }
 
@@ -2911,7 +3322,7 @@
         dmSec.style.display = 'flex';
       } else {
         friendsSec.style.display = 'flex';
-        dmSec.style.display = 'flex';
+        dmSec.style.display = 'none';
       }
     }
 
@@ -3288,8 +3699,13 @@
         document.getElementById(tabId).classList.toggle('active', k === tabKey);
       });
 
+      if (tabKey !== 'globe' && globeSheetExpanded) {
+        collapseGlobeSheet();
+      }
+
       if (tabKey === 'globe') {
         renderStoryBubbles();
+        renderActivityFeed();
       } else if (tabKey === 'map') {
         initMap();
         setTimeout(() => {
@@ -3358,6 +3774,9 @@
       if (initialized) return;
       initialized = true;
       initGlobe();
+      renderStoryBubbles();
+      renderActivityFeed();
+      initGlobeDrawerGestures();
       renderAlbumGrid();
       renderAllCompanionLists();
       renderDmThreads();
