@@ -263,7 +263,7 @@
         display: flex;
         flex-direction: column;
         gap: 12px;
-        max-height: 228px;
+        max-height: 212px;
         overflow: hidden;
         transition: max-height 0.38s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.25s ease, box-shadow 0.25s ease;
       }
@@ -2341,12 +2341,6 @@
         <div class="globe-bottom-sheet" id="globeBottomSheet">
           <div class="sheet-grabber-zone" id="globeGrabberZone" onclick="toggleGlobeSheet()">
             <div class="sheet-Grabber"></div>
-            <div class="drawer-peek-hint" id="drawerPeekHint">
-              <span>위로 올려 실시간 알림 피드 보기</span>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="18 15 12 9 6 15"></polyline>
-              </svg>
-            </div>
           </div>
 
           <!-- 1. 기본 Peek 영역: 스토리 버블 + 프라하 요약 카드 -->
@@ -2480,9 +2474,8 @@
             <button type="submit" class="friend-search-submit">추가</button>
           </form>
 
-          <!-- 3. 친구 목록 영역 (동행자 리스트 + 하단 가로 인스타 추천 친구 박스) -->
+          <!-- 3. 친구 목록 영역 (친구 리스트 + 하단 가로 인스타 추천 친구 박스) -->
           <div class="my-section-card" id="myFriendsSection">
-            <div class="my-section-title">함께한 동행자</div>
             <div class="companion-follow-list" id="myFriendFollowList"></div>
 
             <!-- 하단 인스타그램 스타일 가로 스크롤 추천 친구 박스 -->
