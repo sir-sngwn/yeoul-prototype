@@ -1,0 +1,1987 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>여울 — All Dark Polarsteps Edition</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/globe.gl"></script>
+  <style>
+    @layer reset, tokens, base, components;
+
+    @layer reset {
+      html, body, div, span, h1, h2, h3, p, button, figure, dialog, form, svg {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        background: none;
+        border: none;
+        cursor: pointer;
+        user-select: none;
+      }
+    }
+
+    @layer tokens {
+      :root {
+        /* 푸른끼를 완전히 제거한 순수 뉴트럴 블랙 & 차콜 다크 토큰 */
+        --bg-app: #0A0A0A;
+        --bg-card: #141414;
+        --bg-sub: #1F1F1F;
+        --border-dark: rgba(255, 255, 255, 0.09);
+        --shadow-deep: 0 10px 30px rgba(0, 0, 0, 0.7);
+        --text-main: #F5F5F5;
+        --text-sub: #A3A3A3;
+        --text-muted: #737373;
+        --accent-white: #FFFFFF;
+        --accent-hover: #E5E5E5;
+        --emerald: #10B981;
+        --font-sans: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Malgun Gothic", sans-serif;
+      }
+    }
+
+    @layer base {
+      body {
+        background-color: #000000;
+        color: var(--text-main);
+        font-family: var(--font-sans);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+    }
+
+    @layer components {
+      /* 모바일 디바이스 프레임 (푸른끼 없는 순수 매트 블랙/차콜) */
+      .device-frame {
+        width: 400px;
+        height: 850px;
+        background: var(--bg-app);
+        border-radius: 52px;
+        border: 1px solid #262626;
+        box-shadow: 0 32px 90px rgba(0, 0, 0, 0.9), 0 0 0 6px #121212;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* 상단 상태바 */
+      .status-bar {
+        height: 42px;
+        padding: 0 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-main);
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 60;
+        pointer-events: none;
+      }
+
+      /* 메인 뷰포트 */
+      .viewport {
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+        background: var(--bg-app);
+      }
+
+      .screen {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-app);
+        transition: opacity 0.2s ease;
+      }
+
+      .screen.active {
+        opacity: 1;
+        pointer-events: auto;
+        z-index: 10;
+      }
+
+      /* =====================================================================
+         탭 1: [지구본] (푸른 배경끼 제거 + 하이 콘트라스트 화이트 핀)
+         ===================================================================== */
+      #screenGlobe {
+        background: var(--bg-app);
+      }
+
+      .globe-city-chips {
+        position: absolute;
+        top: 48px;
+        left: 16px;
+        right: 16px;
+        z-index: 20;
+        display: flex;
+        gap: 6px;
+      }
+
+      .city-chip {
+        padding: 6px 13px;
+        border-radius: 999px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-dark);
+        color: var(--text-sub);
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.15s ease;
+      }
+
+      .city-chip.active,
+      .city-chip:hover:not(:disabled) {
+        background: #FFFFFF;
+        color: #0A0A0A;
+        border-color: #FFFFFF;
+      }
+
+      #globeContainer {
+        width: 398px;
+        height: 786px;
+        cursor: grab;
+      }
+
+      #globeContainer:active {
+        cursor: grabbing;
+      }
+
+      .globe-pin-host {
+        width: 0;
+        height: 0;
+        position: relative;
+        pointer-events: auto;
+      }
+
+      .globe-pin-anchor {
+        position: absolute;
+        left: 0;
+        top: 0;
+        transform: translate(-50%, -100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+      }
+
+      .globe-pin-frame {
+        width: 46px;
+        height: 46px;
+        border-radius: 13px;
+        border: 2px solid rgba(255, 255, 255, 0.72);
+        background: var(--bg-card);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.75);
+        overflow: hidden;
+        transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+      }
+
+      .globe-pin-anchor:hover .globe-pin-frame,
+      .globe-pin-anchor.active .globe-pin-frame {
+        transform: scale(1.1);
+        border: 2.5px solid #FFFFFF;
+        box-shadow: 0 0 18px rgba(255, 255, 255, 0.45), 0 8px 20px rgba(0, 0, 0, 0.85);
+      }
+
+      .globe-pin-frame img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .globe-pin-tail {
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 6px solid rgba(255, 255, 255, 0.72);
+        margin-top: -1px;
+      }
+
+      .globe-pin-anchor.active .globe-pin-tail {
+        border-top-color: #FFFFFF;
+      }
+
+      /* 지구본 하단 다크 카드 */
+      .globe-bottom-card {
+        position: absolute;
+        left: 14px;
+        right: 14px;
+        bottom: 14px;
+        z-index: 25;
+        background: var(--bg-card);
+        border: 1px solid var(--border-dark);
+        border-radius: 20px;
+        padding: 14px;
+        box-shadow: var(--shadow-deep);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .globe-card-thumb {
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        object-fit: cover;
+        flex-shrink: 0;
+        background: var(--bg-sub);
+      }
+
+      .globe-card-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .globe-card-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .globe-card-meta {
+        font-size: 12px;
+        color: var(--text-sub);
+        margin-top: 3px;
+      }
+
+      .globe-card-btn {
+        padding: 10px 15px;
+        border-radius: 12px;
+        background: #FFFFFF;
+        color: #0A0A0A;
+        font-size: 13px;
+        font-weight: 700;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        flex-shrink: 0;
+        transition: background-color 0.15s ease, transform 0.15s ease;
+      }
+
+      .globe-card-btn:hover:not(:disabled),
+      .globe-card-btn:active:not(:disabled) {
+        background: var(--accent-hover);
+        transform: scale(0.98);
+      }
+
+      /* =====================================================================
+         탭 2: [지도 & 스토리 뷰] 극단적 미니멀리즘 (지도 70% + 하단 시트 30%)
+         ===================================================================== */
+      /* 상단 고정 헤더 */
+      .map-top-header {
+        padding: 44px 18px 10px;
+        background: rgba(10, 10, 10, 0.94);
+        backdrop-filter: blur(16px);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 40;
+        position: relative;
+        flex-shrink: 0;
+      }
+
+      .map-header-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-main);
+        letter-spacing: -0.02em;
+      }
+
+      .map-header-date {
+        font-size: 12px;
+        color: var(--text-sub);
+        margin-top: 2px;
+      }
+
+      /* 우측 상단 조용한 26px 원형 프로필 아바타 2개 중첩 */
+      .avatar-stack {
+        display: flex;
+        align-items: center;
+      }
+
+      .avatar-circle {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 1.5px solid #0A0A0A;
+        overflow: hidden;
+        background: #262626;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 700;
+        color: #F5F5F5;
+      }
+
+      .avatar-circle img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .avatar-circle.a2 {
+        margin-left: -8px;
+      }
+
+      /* ★ 지도를 타고 여행지 목록이 올라가는 통합 스크롤 컨테이너 */
+      .map-scroll-container {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        position: relative;
+        background: var(--bg-app);
+        scroll-behavior: smooth;
+        scrollbar-width: none;
+      }
+
+      .map-scroll-container::-webkit-scrollbar {
+        display: none;
+      }
+
+      /* 상단 70%를 시원하게 차지하는 웜 다크 지도 영역 (sticky) */
+      .map-sticky-wrap {
+        position: sticky;
+        top: 0;
+        width: 100%;
+        height: 500px;
+        z-index: 1;
+        background: #121212;
+      }
+
+      #leafletMap {
+        width: 100%;
+        height: 100%;
+        background: #121212;
+      }
+
+      /* 프라하 도로와 강이 시원하게 보이는 웜 다크 지도 필터 */
+      .leaflet-tile-pane {
+        filter: grayscale(100%) sepia(10%) brightness(1.48) contrast(1.08);
+      }
+
+      .leaflet-control-attribution,
+      .leaflet-control-zoom {
+        display: none !important;
+      }
+
+      /* 다크 사진 핀 */
+      .map-photo-pin {
+        width: 52px;
+        height: 58px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        position: relative;
+      }
+
+      .map-pin-box {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        border: 2px solid rgba(255, 255, 255, 0.72);
+        background: var(--bg-card);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.75);
+        overflow: hidden;
+        transform-origin: bottom center;
+        transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+      }
+
+      .map-photo-pin.selected .map-pin-box {
+        border: 2.5px solid #FFFFFF;
+        transform: scale(1.12);
+        box-shadow: 0 0 18px rgba(255, 255, 255, 0.45), 0 10px 24px rgba(0, 0, 0, 0.85);
+      }
+
+      .map-pin-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .map-pin-tail {
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 7px solid rgba(255, 255, 255, 0.72);
+        margin-top: -1px;
+      }
+
+      .map-photo-pin.selected .map-pin-tail {
+        border-top-color: #FFFFFF;
+      }
+
+      /* ★ 하단 30%에서 시작해 스크롤 시 지도를 덮으며 올라오는 시트 */
+      .story-feed-sheet {
+        position: relative;
+        z-index: 10;
+        margin-top: -24px;
+        background: var(--bg-app);
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 28px 28px 0 0;
+        box-shadow: 0 -16px 36px rgba(0, 0, 0, 0.85);
+        padding: 12px 18px 36px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        min-height: 540px;
+      }
+
+      .sheet-Grabber {
+        width: 36px;
+        height: 4px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.22);
+        margin: 2px auto 0;
+      }
+
+      /* 원형 하이라이트 핀 바 (불필요한 상자/설명 텍스트 없이 사진과 장소명만) */
+      .story-bubbles-bar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        overflow-x: auto;
+        padding: 2px 2px;
+        scrollbar-width: none;
+      }
+
+      .story-bubbles-bar::-webkit-scrollbar {
+        display: none;
+      }
+
+      .story-bubble-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+        cursor: pointer;
+      }
+
+      .story-bubble-ring {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        padding: 2px;
+        border: 1.5px solid rgba(255, 255, 255, 0.85);
+        background: var(--bg-card);
+        position: relative;
+        transition: transform 0.15s ease;
+      }
+
+      .story-bubble-item:hover .story-bubble-ring {
+        transform: scale(1.05);
+      }
+
+      .story-bubble-ring img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .story-bubble-name {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-sub);
+        max-width: 64px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .story-feed-list {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      /* 장소별 큼직한 사진 카드 (복잡한 테두리/회색 상자 제거) */
+      .story-magazine-card {
+        background: var(--bg-card);
+        border-radius: 22px;
+        overflow: hidden;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+        cursor: pointer;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+        flex-shrink: 0;
+      }
+
+      .story-magazine-card.active {
+        box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.85), 0 14px 34px rgba(0, 0, 0, 0.75);
+      }
+
+      .story-card-photo {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 10;
+        background: var(--bg-sub);
+        overflow: hidden;
+      }
+
+      .story-card-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .btn-gmap-link {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: rgba(10, 10, 10, 0.68);
+        backdrop-filter: blur(8px);
+        color: #FFFFFF;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.15s ease, color 0.15s ease;
+      }
+
+      .btn-gmap-link:hover:not(:disabled) {
+        background: #FFFFFF;
+        color: #0A0A0A;
+      }
+
+      .story-card-body {
+        padding: 16px 18px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .story-title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .story-place-name {
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--text-main);
+        letter-spacing: -0.01em;
+      }
+
+      .story-memo-text {
+        font-size: 13px;
+        color: var(--text-sub);
+        line-height: 1.45;
+      }
+
+      .story-chip-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 2px;
+      }
+
+      .story-memo-chip {
+        background: var(--bg-sub);
+        color: var(--text-sub);
+        font-size: 12px;
+        padding: 6px 11px;
+        border-radius: 999px;
+      }
+
+      .story-memo-chip:hover:not(:disabled) {
+        background: #FFFFFF;
+        color: #0A0A0A;
+      }
+
+      /* 미니 음악 재생 아이콘 버튼 */
+      .btn-story-play {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-main);
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+      }
+
+      .btn-story-play:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.16);
+      }
+
+      .btn-story-play.playing {
+        background: #FFFFFF;
+        color: #0A0A0A;
+      }
+
+      /* ★ 풀스크린 스토리 뷰어 오버레이 */
+      .story-viewer-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 90;
+        background: #000000;
+        display: none;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .story-viewer-overlay.open {
+        display: flex;
+      }
+
+      .story-viewer-bg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .story-viewer-gradient {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(0,0,0,0.68) 0%, rgba(0,0,0,0.12) 35%, rgba(0,0,0,0.82) 100%);
+        pointer-events: none;
+      }
+
+      .story-viewer-top {
+        position: relative;
+        z-index: 2;
+        padding: 46px 14px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .story-progress-row {
+        display: flex;
+        gap: 5px;
+      }
+
+      .story-progress-seg {
+        flex: 1;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.28);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+
+      .story-progress-fill {
+        height: 100%;
+        background: #FFFFFF;
+        width: 0%;
+        transition: width 0.2s linear;
+      }
+
+      .story-viewer-userbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .story-viewer-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .story-viewer-place {
+        font-size: 14px;
+        font-weight: 700;
+        color: #FFFFFF;
+      }
+
+      .story-viewer-sub {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.75);
+      }
+
+      .story-viewer-close {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.16);
+        color: #FFFFFF;
+        font-size: 14px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .story-viewer-nav {
+        position: relative;
+        z-index: 2;
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .story-viewer-bottom {
+        position: relative;
+        z-index: 2;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .story-viewer-caption {
+        font-size: 15px;
+        font-weight: 600;
+        color: #FFFFFF;
+        line-height: 1.45;
+      }
+
+      .story-viewer-footer-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .story-viewer-music {
+        background: rgba(255, 255, 255, 0.14);
+        backdrop-filter: blur(10px);
+        padding: 7px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #FFFFFF;
+      }
+
+      .story-viewer-share-btn {
+        background: #FFFFFF;
+        color: #0A0A0A;
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      /* =====================================================================
+         탭 3: [사진첩 탭] 다크 갤러리 UI
+         ===================================================================== */
+      .album-screen-inner {
+        padding: 52px 16px 16px;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .album-header-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+
+      .album-header-title {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .sync-status-badge {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--emerald);
+        background: rgba(16, 185, 129, 0.12);
+        border: 1px solid rgba(16, 185, 129, 0.25);
+        padding: 5px 10px;
+        border-radius: 999px;
+      }
+
+      .photo-grid-2col {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        overflow-y: auto;
+        padding-bottom: 12px;
+      }
+
+      .album-dark-card {
+        background: var(--bg-card);
+        border: 1.5px solid var(--border-dark);
+        border-radius: 16px;
+        padding: 8px;
+        cursor: pointer;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        box-shadow: var(--shadow-deep);
+      }
+
+      .album-dark-card.selected {
+        border: 2.5px solid #FFFFFF;
+        box-shadow: 0 0 18px rgba(255, 255, 255, 0.45), var(--shadow-deep);
+      }
+
+      .album-thumb-wrap {
+        position: relative;
+        height: 152px;
+        border-radius: 11px;
+        overflow: hidden;
+        background: var(--bg-sub);
+      }
+
+      .album-thumb-wrap img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .check-badge {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: rgba(10, 10, 10, 0.65);
+        border: 1.5px solid rgba(255, 255, 255, 0.6);
+        color: transparent;
+        font-size: 12px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .album-dark-card.selected .check-badge {
+        background: #FFFFFF;
+        border-color: #FFFFFF;
+        color: #0A0A0A;
+      }
+
+      .album-meta-line {
+        margin-top: 9px;
+        padding: 0 2px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-main);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .album-meta-time {
+        color: var(--text-sub);
+        font-weight: 500;
+      }
+
+      .floating-pill-cta {
+        margin-top: auto;
+        width: 100%;
+        padding: 14px 18px;
+        border-radius: 999px;
+        background: #FFFFFF;
+        color: #0A0A0A;
+        font-size: 14px;
+        font-weight: 700;
+        text-align: center;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        transition: background-color 0.15s ease, transform 0.15s ease;
+      }
+
+      .floating-pill-cta:hover:not(:disabled),
+      .floating-pill-cta:active:not(:disabled) {
+        background: var(--accent-hover);
+        transform: scale(0.98);
+      }
+
+      /* =====================================================================
+         탭 4: [인스타 스토리 9:16] 다크 감성 피니시 (푸른끼 제거)
+         ===================================================================== */
+      .share-screen-inner {
+        padding: 50px 16px 14px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+        gap: 12px;
+      }
+
+      .format-switch {
+        display: flex;
+        background: var(--bg-card);
+        border: 1px solid var(--border-dark);
+        border-radius: 999px;
+        padding: 3px;
+        gap: 4px;
+      }
+
+      .format-btn {
+        padding: 6px 16px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-sub);
+      }
+
+      .format-btn.active {
+        background: #FFFFFF;
+        color: #0A0A0A;
+      }
+
+      .share-card-stage {
+        flex: 1;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      .insta-dom-card {
+        position: relative;
+        width: 312px;
+        height: 552px;
+        border-radius: 24px;
+        overflow: hidden;
+        background: #0A0A0A;
+        border: 1px solid var(--border-dark);
+        color: #FFFFFF;
+        box-shadow: var(--shadow-deep);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 22px 18px;
+        transition: height 0.25s ease, width 0.25s ease;
+      }
+
+      .insta-dom-card.post-4-5 {
+        width: 336px;
+        height: 420px;
+      }
+
+      .insta-bg-img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.24;
+        filter: grayscale(35%) blur(6px) scale(1.06);
+        pointer-events: none;
+      }
+
+      .insta-bg-dim {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(10, 10, 10, 0.72) 0%, rgba(10, 10, 10, 0.94) 100%);
+        pointer-events: none;
+      }
+
+      .insta-top {
+        position: relative;
+        z-index: 2;
+      }
+
+      .insta-title {
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        color: #FFFFFF;
+      }
+
+      .insta-date {
+        font-size: 12px;
+        color: var(--text-sub);
+        margin-top: 2px;
+      }
+
+      .insta-route-map {
+        position: relative;
+        z-index: 2;
+        flex: 1;
+        margin: 10px 0;
+      }
+
+      .insta-route-svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      .insta-node {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        gap: 9px;
+      }
+
+      .insta-node-avatar {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        border: 2px solid #FFFFFF;
+        overflow: hidden;
+        background: var(--bg-sub);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.7);
+        flex-shrink: 0;
+      }
+
+      .insta-node-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .insta-node-label {
+        background: rgba(20, 20, 20, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        padding: 5px 10px;
+        border-radius: 8px;
+        color: #FFFFFF;
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      }
+
+      .insta-music-footer {
+        position: relative;
+        z-index: 2;
+        background: rgba(31, 31, 31, 0.76);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 14px;
+        padding: 11px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .insta-music-text {
+        font-size: 13px;
+        font-weight: 600;
+        color: #FFFFFF;
+      }
+
+      .insta-music-sub {
+        font-size: 11px;
+        color: var(--text-sub);
+      }
+
+      /* 하단 탭바 (푸른끼 없는 순수 다크 블러) */
+      .tabbar {
+        height: 62px;
+        background: rgba(14, 14, 14, 0.88);
+        backdrop-filter: blur(20px);
+        border-top: 1px solid rgba(255, 255, 255, 0.07);
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        z-index: 50;
+        flex-shrink: 0;
+      }
+
+      .tab-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        transition: color 0.15s ease;
+      }
+
+      .tab-btn.active {
+        color: #FFFFFF;
+      }
+
+      /* 구글 지도 공식 iframe 다크 모달 (<dialog>) */
+      dialog#googleMapDialog {
+        margin: auto;
+        width: 372px;
+        height: 660px;
+        background: var(--bg-card);
+        color: var(--text-main);
+        border: 1px solid var(--border-dark);
+        border-radius: 24px;
+        padding: 14px;
+        box-shadow: var(--shadow-deep);
+      }
+
+      dialog#googleMapDialog[open] {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      dialog#googleMapDialog:modal {
+        overscroll-behavior: contain;
+      }
+
+      dialog#googleMapDialog::backdrop {
+        background: rgba(0, 0, 0, 0.76);
+        overflow: hidden;
+        overscroll-behavior: contain;
+      }
+
+      .gmap-iframe-box {
+        flex: 1;
+        border-radius: 14px;
+        overflow: hidden;
+        background: var(--bg-sub);
+      }
+
+      /* 토스트 알림 */
+      .toast-msg {
+        position: absolute;
+        top: 50px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-8px);
+        background: #FFFFFF;
+        color: #0A0A0A;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 8px 16px;
+        border-radius: 999px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        z-index: 95;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+
+      .toast-msg.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="device-frame" aria-label="여울 앱">
+    <header class="status-bar" id="statusBar">
+      <span>9:41</span>
+      <span>5G 100%</span>
+    </header>
+
+    <div class="toast-msg" id="toastMsg" role="status" aria-live="polite"></div>
+
+    <div class="viewport">
+      <!-- 탭 1: [지구본] -->
+      <section class="screen active" id="screenGlobe" aria-label="지구본">
+        <div class="globe-city-chips">
+          <button type="button" class="city-chip active" data-city="prague" onclick="selectCityOnGlobe('prague', true)">프라하</button>
+          <button type="button" class="city-chip" data-city="tokyo" onclick="selectCityOnGlobe('tokyo', true)">도쿄</button>
+          <button type="button" class="city-chip" data-city="osaka" onclick="selectCityOnGlobe('osaka', true)">오사카</button>
+          <button type="button" class="city-chip" data-city="hongkong" onclick="selectCityOnGlobe('hongkong', true)">홍콩</button>
+        </div>
+
+        <div id="globeContainer"></div>
+
+        <div class="globe-bottom-card">
+          <img id="globeCardThumb" class="globe-card-thumb" src="https://images.unsplash.com/photo-1592906209472-a36b1f3782ef?auto=format&fit=crop&w=800&q=80" alt="체코 프라하">
+          <div class="globe-card-info">
+            <h2 class="globe-card-title" id="globeCardTitle">체코 프라하</h2>
+            <p class="globe-card-meta" id="globeCardMeta">2026.12.20 - 12.21 · 4곳</p>
+          </div>
+          <button type="button" class="globe-card-btn" onclick="switchTab('map')">지도 보기</button>
+        </div>
+      </section>
+
+      <!-- 탭 2: [지도 & 스토리 뷰] 극단적 미니멀리즘 (지도 70% + 하단 시트 30%) -->
+      <section class="screen" id="screenMap" aria-label="지도">
+        <div class="map-top-header">
+          <div>
+            <h2 class="map-header-title">체코 프라하</h2>
+            <p class="map-header-date">2026.12.20 - 12.21</p>
+          </div>
+          <div class="avatar-stack" aria-label="동행 프로필">
+            <span class="avatar-circle a1">
+              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80" alt="">
+            </span>
+            <span class="avatar-circle a2">
+              <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80" alt="">
+            </span>
+          </div>
+        </div>
+
+        <!-- ★ 스크롤 시 지도를 타고 여행지 목록 시트가 위로 올라오는 컨테이너 -->
+        <div class="map-scroll-container" id="mapScrollContainer">
+          <div class="map-sticky-wrap">
+            <div id="leafletMap"></div>
+          </div>
+
+          <div class="story-feed-sheet" id="storyFeedSheet">
+            <div class="sheet-Grabber"></div>
+
+            <!-- 원형 하이라이트 핀 -->
+            <div class="story-bubbles-bar" id="storyBubblesBar"></div>
+
+            <!-- 장소별 사진 카드 목록 -->
+            <div class="story-feed-list" id="storyFeedList"></div>
+          </div>
+        </div>
+
+        <!-- ★ 풀스크린 스토리 뷰어 오버레이 -->
+        <div class="story-viewer-overlay" id="storyViewerModal">
+          <img class="story-viewer-bg" id="storyViewerImg" src="https://images.unsplash.com/photo-1592906209472-a36b1f3782ef?auto=format&fit=crop&w=800&q=80" alt="">
+          <div class="story-viewer-gradient"></div>
+
+          <div class="story-viewer-top">
+            <div class="story-progress-row" id="storyProgressRow"></div>
+            <div class="story-viewer-userbar">
+              <div class="story-viewer-meta">
+                <div class="story-viewer-place" id="storyViewerPlace">프라하 성</div>
+              </div>
+              <button type="button" class="story-viewer-close" onclick="closeStoryViewer()">✕</button>
+            </div>
+          </div>
+
+          <div class="story-viewer-nav">
+            <div onclick="stepStorySlide(-1)" title="이전"></div>
+            <div onclick="stepStorySlide(1)" title="다음"></div>
+          </div>
+
+          <div class="story-viewer-bottom">
+            <p class="story-viewer-caption" id="storyViewerCaption">올라가는 길은 좀 힘들었는데 위에서 본 뷰가 최고</p>
+            <div class="story-viewer-footer-row">
+              <span class="story-viewer-music" id="storyViewerMusic">🎵 JVKE - Golden Hour</span>
+              <button type="button" class="story-viewer-share-btn" onclick="closeStoryViewer(); switchTab('share')">공유</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 탭 3: [사진첩] 다크 갤러리 UI -->
+      <section class="screen" id="screenAlbum" aria-label="사진첩">
+        <div class="album-screen-inner">
+          <div class="album-header-bar">
+            <h2 class="album-header-title">사진첩</h2>
+          </div>
+
+          <div class="photo-grid-2col" id="albumGrid"></div>
+
+          <button type="button" class="floating-pill-cta" id="btnAddPhotos" onclick="addCheckedPhotosToMap()">
+            선택한 사진 지도에 추가 (1)
+          </button>
+        </div>
+      </section>
+
+      <!-- 탭 4: [인스타 스토리 9:16] 다크 감성 피니시 -->
+      <section class="screen" id="screenShare" aria-label="공유">
+        <div class="share-screen-inner">
+          <div class="format-switch" role="tablist">
+            <button type="button" class="format-btn active" id="btnFmtStory" onclick="switchShareFormat('story')">스토리 9:16</button>
+            <button type="button" class="format-btn" id="btnFmtPost" onclick="switchShareFormat('post')">피드 4:5</button>
+          </div>
+
+          <div class="share-card-stage">
+            <div class="insta-dom-card" id="instaDomCard">
+              <img class="insta-bg-img" src="https://images.unsplash.com/photo-1592906209472-a36b1f3782ef?auto=format&fit=crop&w=800&q=80" alt="">
+              <div class="insta-bg-dim"></div>
+
+              <div class="insta-top">
+                <div class="insta-title">PRAGUE</div>
+                <div class="insta-date">2026.12.20 - 12.21</div>
+              </div>
+
+              <div class="insta-route-map">
+                <svg class="insta-route-svg" viewBox="0 0 300 320" preserveAspectRatio="none">
+                  <polyline points="195,45 95,120 75,205 185,275" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="2" stroke-dasharray="5,5"/>
+                </svg>
+
+                <div class="insta-node" style="left:64%; top:14%;">
+                  <div class="insta-node-avatar">
+                    <img src="https://images.unsplash.com/photo-1541849546-216549ae216d?auto=format&fit=crop&w=800&q=80" alt="구시가지 광장">
+                  </div>
+                  <span class="insta-node-label">구시가지 광장</span>
+                </div>
+
+                <div class="insta-node" style="left:34%; top:38%;">
+                  <div class="insta-node-avatar">
+                    <img src="https://images.unsplash.com/photo-1562624475-96c2bc08fab9?auto=format&fit=crop&w=800&q=80" alt="카를교">
+                  </div>
+                  <span class="insta-node-label">카를교</span>
+                </div>
+
+                <div class="insta-node" style="left:28%; top:64%;">
+                  <div class="insta-node-avatar">
+                    <img src="https://images.unsplash.com/photo-1592906209472-a36b1f3782ef?auto=format&fit=crop&w=800&q=80" alt="프라하 성">
+                  </div>
+                  <span class="insta-node-label">프라하 성</span>
+                </div>
+
+                <div class="insta-node" style="left:60%; top:86%;">
+                  <div class="insta-node-avatar">
+                    <img src="https://images.unsplash.com/photo-1513805959324-96eb66ca8713?auto=format&fit=crop&w=800&q=80" alt="비셰흐라드">
+                  </div>
+                  <span class="insta-node-label">비셰흐라드</span>
+                </div>
+              </div>
+
+              <div class="insta-music-footer">
+                <span class="insta-music-text">🎵 JVKE - Golden Hour</span>
+                <span class="insta-music-sub">동행 3명 · 4곳 기록</span>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="floating-pill-cta" style="margin-top:0;" onclick="saveShareImage()">
+            이미지 저장
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <!-- 하단 4탭 바 -->
+    <nav class="tabbar" aria-label="하단 메뉴">
+      <button type="button" class="tab-btn active" id="tabGlobe" onclick="switchTab('globe')">
+        <span>지구본</span>
+      </button>
+      <button type="button" class="tab-btn" id="tabMap" onclick="switchTab('map')">
+        <span>지도</span>
+      </button>
+      <button type="button" class="tab-btn" id="tabAlbum" onclick="switchTab('album')">
+        <span>사진첩</span>
+      </button>
+      <button type="button" class="tab-btn" id="tabShare" onclick="switchTab('share')">
+        <span>공유</span>
+      </button>
+    </nav>
+  </main>
+
+  <!-- 실제 구글맵 공식 iframe 모달 (<dialog>) -->
+  <dialog id="googleMapDialog" closedby="any" aria-labelledby="gmapDialogTitle">
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+      <h2 id="gmapDialogTitle" style="font-size:16px; font-weight:700;">프라하 성</h2>
+      <form method="dialog">
+        <button value="close" style="font-size:13px; font-weight:600; color:var(--text-sub); padding:4px 8px;" autofocus>닫기</button>
+      </form>
+    </div>
+    <div class="gmap-iframe-box">
+      <iframe id="gmapIframe" src="https://maps.google.com/maps?q=50.0911,14.4016&hl=ko&z=16&output=embed" width="100%" height="100%" style="border:0;" loading="lazy"></iframe>
+    </div>
+  </dialog>
+
+  <script>
+    // <dialog closedby="any"> 폴백
+    if (!('closedBy' in HTMLDialogElement.prototype)) {
+      const isOutside = (e, dialog) => {
+        const r = dialog.getBoundingClientRect();
+        return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+      };
+      for (const dialog of document.querySelectorAll('dialog[closedby="any"]')) {
+        let downOutside = false;
+        dialog.addEventListener('pointerdown', (e) => { downOutside = isOutside(e, dialog); });
+        dialog.addEventListener('pointerup', (e) => { if (downOutside && isOutside(e, dialog)) dialog.close(); });
+      }
+    }
+
+    // 1. 고정 이미지 URL 및 데이터셋
+    const LENNON_WIKI_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Lennon_Wall_in_Prague_%282018%29.jpg/800px-Lennon_Wall_in_Prague_%282018%29.jpg';
+    const LENNON_FALLBACK_URL = 'https://images.unsplash.com/photo-1708569873142-1727fb9d82cf?auto=format&fit=crop&w=800&q=80';
+
+    const PHOTO_URLS = {
+      oldtown: 'https://images.unsplash.com/photo-1541849546-216549ae216d?auto=format&fit=crop&w=800&q=80',
+      charles: 'https://images.unsplash.com/photo-1562624475-96c2bc08fab9?auto=format&fit=crop&w=800&q=80',
+      castle: 'https://images.unsplash.com/photo-1592906209472-a36b1f3782ef?auto=format&fit=crop&w=800&q=80',
+      vysehrad: 'https://images.unsplash.com/photo-1513805959324-96eb66ca8713?auto=format&fit=crop&w=800&q=80',
+      dancing: 'https://images.unsplash.com/photo-1519677100203-a0e668c92439?auto=format&fit=crop&w=800&q=80',
+      lennon: LENNON_WIKI_URL,
+      powder: 'https://images.unsplash.com/photo-1564511287568-54483b52a35e?auto=format&fit=crop&w=800&q=80',
+      letna: 'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?auto=format&fit=crop&w=800&q=80',
+      tokyo: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80',
+      osaka: 'https://images.unsplash.com/photo-1590559899731-a382839e5549?auto=format&fit=crop&w=800&q=80',
+      hongkong: 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=800&q=80'
+    };
+
+    const CITIES = [
+      { id: 'prague', name: '프라하', title: '체코 프라하', meta: '2026.12.20 - 12.21 · 4곳', lat: 50.0875, lng: 14.4213, globeLat: 50.0875, globeLng: 14.4213, photo: PHOTO_URLS.castle },
+      { id: 'tokyo', name: '도쿄', title: '일본 도쿄', meta: '2026.05.12 - 05.15 · 6곳', lat: 35.6762, lng: 139.6503, globeLat: 39.5, globeLng: 142.0, photo: PHOTO_URLS.tokyo },
+      { id: 'osaka', name: '오사카', title: '일본 오사카', meta: '2025.10.03 - 10.06 · 5곳', lat: 34.6937, lng: 135.5023, globeLat: 31.0, globeLng: 131.5, photo: PHOTO_URLS.osaka },
+      { id: 'hongkong', name: '홍콩', title: '홍콩', meta: '2025.02.14 - 02.17 · 4곳', lat: 22.3193, lng: 114.1694, globeLat: 21.0, globeLng: 113.5, photo: PHOTO_URLS.hongkong }
+    ];
+
+    const PLACES = [
+      {
+        id: 'castle',
+        name: '프라하 성',
+        author: '송민경 공유',
+        authorInitial: '민',
+        lat: 50.0895,
+        lng: 14.4048,
+        time: '12.21 16:48',
+        score: 98,
+        song: 'JVKE - Golden Hour',
+        photo: PHOTO_URLS.castle,
+        comment: '올라가는 길은 좀 힘들었는데 위에서 본 뷰가 최고',
+        chips: ['올라가는 길은 좀 힘들었는데 위에서 본 뷰가 최고', '해 질 녘에 가니까 풍경이 잘 보임', '생각보다 규모가 커서 볼 게 많았음']
+      },
+      {
+        id: 'charles',
+        name: '카를교',
+        author: '최현서 공유',
+        authorInitial: '현',
+        lat: 50.0865,
+        lng: 14.4114,
+        time: '12.21 08:10',
+        score: 96,
+        song: 'Ludovico Einaudi - Nuvole Bianche',
+        photo: PHOTO_URLS.charles,
+        comment: '아침 일찍 가니까 한산해서 사진 찍기 딱 좋음',
+        chips: ['아침 일찍 가니까 한산해서 사진 찍기 딱 좋음', '다리 위에서 보는 강변 뷰가 좋음', '산책하면서 건너기 적당했음']
+      },
+      {
+        id: 'oldtown',
+        name: '구시가지 광장',
+        author: '김성원 공유',
+        authorInitial: '성',
+        lat: 50.0882,
+        lng: 14.4182,
+        time: '12.20 18:14',
+        score: 95,
+        song: 'Lauv - Paris in the Rain',
+        photo: PHOTO_URLS.oldtown,
+        comment: '사람 많았는데 야경은 진짜 좋았음',
+        chips: ['사람 많았는데 야경은 진짜 좋았음', '시계탑 앞이 사진 찍기 좋았음', '근처 노점 음식이 괜찮았음']
+      },
+      {
+        id: 'vysehrad',
+        name: '비셰흐라드',
+        author: '송민경 공유',
+        authorInitial: '민',
+        lat: 50.0842,
+        lng: 14.4152,
+        time: '12.21 19:32',
+        score: 94,
+        song: 'Claude Debussy - Clair de Lune',
+        photo: PHOTO_URLS.vysehrad,
+        comment: '',
+        chips: [
+          '야경 보면서 맥주 마시기 좋았음',
+          '조용해서 산책하기 괜찮았음',
+          '바람은 좀 불었지만 뷰가 탁 트여 있음'
+        ]
+      }
+    ];
+
+    const ALBUM_PHOTOS = [
+      { id: 'dancing', name: '댄싱 하우스', author: '최현서 공유', authorInitial: '현', time: '12.22 11:20', lat: 50.0755, lng: 14.4141, song: 'Chet Baker - Almost Blue', photo: PHOTO_URLS.dancing, selected: true },
+      { id: 'lennon', name: '존 레논 벽', author: '송민경 공유', authorInitial: '민', time: '12.22 13:05', lat: 50.0862, lng: 14.4068, song: 'The Beatles - Imagine', photo: PHOTO_URLS.lennon, fallback: LENNON_FALLBACK_URL, selected: false },
+      { id: 'powder', name: '화약탑', author: '김성원 공유', authorInitial: '성', time: '12.22 15:40', lat: 50.0873, lng: 14.4278, song: 'Olafur Arnalds - Saman', photo: PHOTO_URLS.powder, selected: false },
+      { id: 'letna', name: '레트나 공원', author: '송민경 공유', authorInitial: '민', time: '12.22 17:10', lat: 50.0948, lng: 14.4158, song: 'Novo Amor - Anchor', photo: PHOTO_URLS.letna, selected: false }
+    ];
+
+    let currentCityId = 'prague';
+    let currentPlaceIdx = 0;
+
+    // 2. 탭 1: [지구본] (푸른끼 없는 순수 다크 배경 #0A0A0A)
+    let globeObj = null;
+
+    function initGlobe() {
+      const container = document.getElementById('globeContainer');
+      if (!container || typeof Globe !== 'function') return;
+
+      globeObj = Globe()(container)
+        .width(398)
+        .height(786)
+        .backgroundColor('#0A0A0A')
+        .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+        .atmosphereColor('#A3A3A3')
+        .atmosphereAltitude(0.1)
+        .htmlElementsData(CITIES)
+        .htmlLat((d) => d.globeLat)
+        .htmlLng((d) => d.globeLng)
+        .htmlAltitude(0)
+        .htmlElement((d) => {
+          const host = document.createElement('div');
+          host.className = 'globe-pin-host';
+          host.innerHTML = `
+            <div class="globe-pin-anchor ${d.id === currentCityId ? 'active' : ''}" id="globePin_${d.id}">
+              <div class="globe-pin-frame">
+                <img src="${d.photo}" alt="${d.name}">
+              </div>
+              <div class="globe-pin-tail"></div>
+            </div>
+          `;
+          host.querySelector('.globe-pin-anchor').onclick = (e) => {
+            e.stopPropagation();
+            selectCityOnGlobe(d.id, true);
+          };
+          return host;
+        });
+
+      globeObj.pointOfView({ lat: 35.0, lng: 75.0, altitude: 2.9 }, 0);
+    }
+
+    function selectCityOnGlobe(cityId, zoomIn) {
+      const city = CITIES.find((c) => c.id === cityId);
+      if (!city) return;
+      currentCityId = cityId;
+
+      document.querySelectorAll('.city-chip').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.city === cityId);
+      });
+
+      document.querySelectorAll('.globe-pin-anchor').forEach((el) => {
+        el.classList.toggle('active', el.id === `globePin_${cityId}`);
+      });
+
+      if (globeObj && zoomIn) {
+        globeObj.pointOfView({ lat: city.globeLat, lng: city.globeLng, altitude: 1.5 }, 900);
+      }
+
+      document.getElementById('globeCardThumb').src = city.photo;
+      document.getElementById('globeCardTitle').textContent = city.title;
+      document.getElementById('globeCardMeta').textContent = city.meta;
+    }
+
+    // 3. 탭 2: [지도 & 스토리 뷰]
+    let mapInstance = null;
+    let mapMarkers = [];
+
+    function initMap() {
+      if (mapInstance || typeof L === 'undefined') return;
+
+      mapInstance = L.map('leafletMap', {
+        center: [50.0870, 14.4115],
+        zoom: 15,
+        zoomControl: false,
+        attributionControl: false
+      });
+
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19
+      }).addTo(mapInstance);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19
+      }).addTo(mapInstance);
+
+      renderMapMarkers();
+      renderStoryBubbles();
+      renderStoryFeed();
+    }
+
+    function renderMapMarkers() {
+      if (!mapInstance || typeof L === 'undefined') return;
+
+      mapMarkers.forEach((m) => m.remove());
+      mapMarkers = [];
+
+      PLACES.forEach((p, idx) => {
+        const icon = L.divIcon({
+          className: '',
+          iconSize: [52, 58],
+          iconAnchor: [26, 56],
+          html: `
+            <div class="map-photo-pin ${idx === currentPlaceIdx ? 'selected' : ''}" id="mapPin_${idx}">
+              <div class="map-pin-box">
+                <img src="${p.photo}" alt="${p.name}" onerror="if(this.dataset.fb)this.src=this.dataset.fb" data-fb="${LENNON_FALLBACK_URL}">
+              </div>
+              <div class="map-pin-tail"></div>
+            </div>
+          `
+        });
+
+        const marker = L.marker([p.lat, p.lng], { icon }).addTo(mapInstance);
+        marker.on('click', () => focusPlace(idx, true));
+        mapMarkers.push(marker);
+      });
+    }
+
+    // 원형 하이라이트 핀 렌더링 (텍스트 라벨 최소화)
+    function renderStoryBubbles() {
+      const bar = document.getElementById('storyBubblesBar');
+      if (!bar) return;
+      bar.innerHTML = '';
+
+      PLACES.forEach((place, idx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'story-bubble-item';
+        btn.onclick = () => openStoryViewer(idx);
+        btn.innerHTML = `
+          <div class="story-bubble-ring">
+            <img src="${place.photo}" alt="${place.name}" onerror="if(this.dataset.fb)this.src=this.dataset.fb" data-fb="${LENNON_FALLBACK_URL}">
+          </div>
+          <span class="story-bubble-name">${place.name}</span>
+        `;
+        bar.appendChild(btn);
+      });
+    }
+
+    function renderStoryFeed() {
+      const feed = document.getElementById('storyFeedList');
+      if (!feed) return;
+      feed.innerHTML = '';
+
+      PLACES.forEach((place, idx) => {
+        const card = document.createElement('article');
+        card.className = `story-magazine-card ${idx === currentPlaceIdx ? 'active' : ''}`;
+        card.id = `storyCard_${idx}`;
+        card.onclick = () => focusPlace(idx, false);
+
+        const isPlayingThis = isPlayingAudio && playingPlaceIdx === idx;
+        const memoHtml = (place.comment && place.comment.trim() !== '')
+          ? `<p class="story-memo-text">${place.comment}</p>`
+          : `
+            <div class="story-chip-group" onclick="event.stopPropagation()">
+              ${place.chips.map((c) => `<button type="button" class="story-memo-chip" onclick="selectMemoChip(${idx}, '${c}')">${c}</button>`).join('')}
+            </div>
+          `;
+
+        card.innerHTML = `
+          <div class="story-card-photo">
+            <img src="${place.photo}" alt="${place.name}" onerror="if(this.dataset.fb)this.src=this.dataset.fb" data-fb="${LENNON_FALLBACK_URL}">
+            <button type="button" class="btn-gmap-link" onclick="event.stopPropagation(); openGoogleMapModal(${idx})" aria-label="지도 확대">↗</button>
+          </div>
+          <div class="story-card-body">
+            <div class="story-title-row">
+              <h3 class="story-place-name">${place.name}</h3>
+              <button type="button" class="btn-story-play ${isPlayingThis ? 'playing' : ''}" onclick="event.stopPropagation(); toggleMusic(${idx})" aria-label="음악 재생">${isPlayingThis ? '■' : '♫'}</button>
+            </div>
+            ${memoHtml}
+          </div>
+        `;
+        feed.appendChild(card);
+      });
+    }
+
+    function focusPlace(idx, scrollCardIntoView) {
+      currentPlaceIdx = idx;
+      const place = PLACES[idx];
+      if (!place) return;
+
+      document.querySelectorAll('.map-photo-pin').forEach((el, i) => {
+        el.classList.toggle('selected', i === idx);
+      });
+
+      document.querySelectorAll('.story-magazine-card').forEach((el, i) => {
+        el.classList.toggle('active', i === idx);
+      });
+
+      if (mapInstance) {
+        mapInstance.flyTo([place.lat, place.lng], 15, { duration: 0.65 });
+      }
+
+      if (scrollCardIntoView) {
+        const cardEl = document.getElementById(`storyCard_${idx}`);
+        if (cardEl) cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    // 풀스크린 스토리 뷰어 제어
+    let activeStoryIdx = 0;
+    let storyAutoTimer = null;
+
+    function openStoryViewer(startIdx) {
+      activeStoryIdx = startIdx || 0;
+      document.getElementById('storyViewerModal').classList.add('open');
+      updateStorySlide();
+    }
+
+    function closeStoryViewer() {
+      clearTimeout(storyAutoTimer);
+      document.getElementById('storyViewerModal').classList.remove('open');
+    }
+
+    function stepStorySlide(delta) {
+      const next = activeStoryIdx + delta;
+      if (next < 0) {
+        activeStoryIdx = 0;
+      } else if (next >= PLACES.length) {
+        closeStoryViewer();
+        return;
+      } else {
+        activeStoryIdx = next;
+      }
+      updateStorySlide();
+    }
+
+    function updateStorySlide() {
+      clearTimeout(storyAutoTimer);
+      const place = PLACES[activeStoryIdx];
+      if (!place) return;
+
+      document.getElementById('storyViewerImg').src = place.photo;
+      document.getElementById('storyViewerPlace').textContent = place.name;
+      document.getElementById('storyViewerCaption').textContent = place.comment || '바람은 좀 불었지만 뷰가 탁 트여 있음';
+      document.getElementById('storyViewerMusic').textContent = `🎵 ${place.song}`;
+
+      const progRow = document.getElementById('storyProgressRow');
+      progRow.innerHTML = PLACES.map((_, i) => `
+        <div class="story-progress-seg">
+          <div class="story-progress-fill" style="width:${i < activeStoryIdx ? '100%' : (i === activeStoryIdx ? '100%' : '0%')}"></div>
+        </div>
+      `).join('');
+
+      storyAutoTimer = setTimeout(() => {
+        stepStorySlide(1);
+      }, 3800);
+    }
+
+    function selectMemoChip(idx, text) {
+      const place = PLACES[idx];
+      if (!place) return;
+      place.comment = text;
+      renderStoryFeed();
+      focusPlace(idx, false);
+      showToast('메모 저장됨');
+    }
+
+    function openGoogleMapModal(idx) {
+      const place = PLACES[idx !== undefined ? idx : currentPlaceIdx];
+      if (!place) return;
+      document.getElementById('gmapDialogTitle').textContent = place.name;
+      document.getElementById('gmapIframe').src = `https://maps.google.com/maps?q=${place.lat},${place.lng}&hl=ko&z=16&output=embed`;
+      document.getElementById('googleMapDialog').showModal();
+    }
+
+    // Web Audio 사운드 재생
+    let audioCtx = null;
+    let audioTimer = null;
+    let isPlayingAudio = false;
+    let playingPlaceIdx = -1;
+
+    function toggleMusic(idx) {
+      if (isPlayingAudio && playingPlaceIdx === idx) {
+        isPlayingAudio = false;
+        playingPlaceIdx = -1;
+        clearInterval(audioTimer);
+        renderStoryFeed();
+        return;
+      }
+
+      clearInterval(audioTimer);
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!audioCtx) audioCtx = new AudioContextClass();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      isPlayingAudio = true;
+      playingPlaceIdx = idx;
+      renderStoryFeed();
+
+      const freqs = [349.23, 440.0, 523.25, 659.25, 587.33, 523.25];
+      let step = 0;
+
+      const playTone = (f) => {
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f, now);
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.exponentialRampToValueAtTime(0.07, now + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.55);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.58);
+      };
+
+      playTone(freqs[0]);
+      audioTimer = setInterval(() => {
+        step = (step + 1) % freqs.length;
+        playTone(freqs[step]);
+      }, 420);
+    }
+
+    // 4. 탭 3: [사진첩 탭] 다크 갤러리 UI
+    function renderAlbumGrid() {
+      const grid = document.getElementById('albumGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      ALBUM_PHOTOS.forEach((item) => {
+        const card = document.createElement('div');
+        card.className = `album-dark-card ${item.selected ? 'selected' : ''}`;
+        card.onclick = () => {
+          item.selected = !item.selected;
+          renderAlbumGrid();
+        };
+        const fbAttr = item.fallback ? `onerror="if(this.src!==this.dataset.fb)this.src=this.dataset.fb" data-fb="${item.fallback}"` : '';
+        card.innerHTML = `
+          <div class="album-thumb-wrap">
+            <img src="${item.photo}" alt="${item.name}" ${fbAttr}>
+            <span class="check-badge">✓</span>
+          </div>
+          <div class="album-meta-line">
+            ${item.name} <span class="album-meta-time">· ${item.time}</span>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      const count = ALBUM_PHOTOS.filter((x) => x.selected).length;
+      document.getElementById('btnAddPhotos').textContent = `선택한 사진 지도에 추가 (${count})`;
+    }
+
+    function addCheckedPhotosToMap() {
+      let chosen = ALBUM_PHOTOS.filter((x) => x.selected);
+      if (chosen.length === 0) {
+        chosen = [ALBUM_PHOTOS[0]];
+        ALBUM_PHOTOS[0].selected = true;
+      }
+
+      let targetIdx = currentPlaceIdx;
+      chosen.forEach((item) => {
+        const exist = PLACES.findIndex((p) => p.id === item.id);
+        if (exist !== -1) {
+          targetIdx = exist;
+          return;
+        }
+        PLACES.push({
+          id: item.id,
+          name: item.name,
+          author: item.author || '송민경 공유',
+          authorInitial: item.authorInitial || '민',
+          lat: item.lat,
+          lng: item.lng,
+          time: item.time,
+          score: 96,
+          song: item.song,
+          photo: item.fallback || item.photo,
+          comment: '',
+          chips: ['사진 찍기 좋았음', '가볍게 둘러보기 괜찮았음', '근처 지나가다 들르기 좋음']
+        });
+        targetIdx = PLACES.length - 1;
+      });
+
+      switchTab('map');
+      setTimeout(() => {
+        renderMapMarkers();
+        renderStoryBubbles();
+        renderStoryFeed();
+        focusPlace(targetIdx, true);
+        showToast('선택한 사진이 지도에 추가됨');
+      }, 180);
+    }
+
+    // 5. 탭 4: [인스타 스토리 9:16]
+    function switchShareFormat(fmt) {
+      document.getElementById('btnFmtStory').classList.toggle('active', fmt === 'story');
+      document.getElementById('btnFmtPost').classList.toggle('active', fmt === 'post');
+      document.getElementById('instaDomCard').classList.toggle('post-4-5', fmt === 'post');
+    }
+
+    function saveShareImage() {
+      showToast('이미지 저장됨');
+    }
+
+    // 6. 탭 전환 컨트롤러
+    function switchTab(tabKey) {
+      const mapping = {
+        globe: ['screenGlobe', 'tabGlobe'],
+        map: ['screenMap', 'tabMap'],
+        album: ['screenAlbum', 'tabAlbum'],
+        share: ['screenShare', 'tabShare']
+      };
+
+      Object.entries(mapping).forEach(([k, [scrId, tabId]]) => {
+        document.getElementById(scrId).classList.toggle('active', k === tabKey);
+        document.getElementById(tabId).classList.toggle('active', k === tabKey);
+      });
+
+      if (tabKey === 'map') {
+        initMap();
+        setTimeout(() => {
+          if (mapInstance) {
+            mapInstance.invalidateSize();
+            mapInstance.setView([50.0870, 14.4115], 15, { animate: false });
+          }
+          renderStoryBubbles();
+          renderStoryFeed();
+        }, 150);
+      } else if (tabKey === 'album') {
+        renderAlbumGrid();
+      }
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const el = document.getElementById('toastMsg');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+    }
+
+    function initMapScrollSync() {
+      const scroller = document.getElementById('mapScrollContainer');
+      if (!scroller) return;
+      scroller.addEventListener('scroll', () => {
+        const cards = document.querySelectorAll('.story-magazine-card');
+        if (!cards.length) return;
+        const containerRect = scroller.getBoundingClientRect();
+        const targetY = containerRect.top + containerRect.height * 0.55;
+        let bestIdx = currentPlaceIdx;
+        let bestDist = Infinity;
+        cards.forEach((card, idx) => {
+          const r = card.getBoundingClientRect();
+          const center = (r.top + r.bottom) / 2;
+          const dist = Math.abs(center - targetY);
+          if (dist < bestDist) {
+            bestDist = dist;
+            bestIdx = idx;
+          }
+        });
+        if (bestIdx !== currentPlaceIdx) {
+          currentPlaceIdx = bestIdx;
+          const place = PLACES[bestIdx];
+          document.querySelectorAll('.map-photo-pin').forEach((el, i) => {
+            el.classList.toggle('selected', i === bestIdx);
+          });
+          document.querySelectorAll('.story-magazine-card').forEach((el, i) => {
+            el.classList.toggle('active', i === bestIdx);
+          });
+          if (mapInstance && place) {
+            mapInstance.panTo([place.lat, place.lng], { animate: true });
+          }
+        }
+      }, { passive: true });
+    }
+
+    let initialized = false;
+    function boot() {
+      if (initialized) return;
+      initialized = true;
+      initGlobe();
+      renderAlbumGrid();
+      initMapScrollSync();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', boot);
+    } else {
+      boot();
+    }
+    window.addEventListener('load', boot);
+  </script>
+</body>
+</html>
