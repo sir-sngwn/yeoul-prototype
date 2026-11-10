@@ -349,8 +349,8 @@
       }
 
       .story-bubble-ring {
-        width: 56px;
-        height: 56px;
+        width: 60px;
+        height: 60px;
         border-radius: 50%;
         padding: 2px;
         border: 1.5px solid rgba(255, 255, 255, 0.88);
@@ -372,13 +372,7 @@
       }
 
       .story-bubble-name {
-        font-size: 11px;
-        font-weight: 600;
-        color: var(--text-sub);
-        max-width: 66px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        display: none !important;
       }
 
       .globe-summary-row {
@@ -3106,11 +3100,11 @@
         btn.type = 'button';
         btn.className = 'story-bubble-item';
         btn.onclick = () => openStoryViewer(idx);
+        btn.setAttribute('aria-label', `${place.name} 스토리 보기`);
         btn.innerHTML = `
           <div class="story-bubble-ring">
             <img src="${place.photo}" alt="${place.name}" onerror="if(this.dataset.fb)this.src=this.dataset.fb" data-fb="${LENNON_FALLBACK_URL}">
           </div>
-          <span class="story-bubble-name">${place.name}</span>
         `;
         bar.appendChild(btn);
       });
