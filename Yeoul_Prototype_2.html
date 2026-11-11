@@ -3531,7 +3531,7 @@
       } else if (item.type === 'album') {
         collapseGlobeSheet();
         switchTab('album');
-        showToast(`${item.user}님이 공유한 사진첩으로 이동합니다`);
+        showToast(`${item.user}님이 공유한 여행 피드로 이동합니다`);
       } else if (item.type === 'follow') {
         toggleUserFollow(item.userIdx);
         renderActivityFeed();
@@ -4079,7 +4079,9 @@
         return;
       }
 
-      container.innerHTML = filtered.map((item, idx) => `
+      container.innerHTML = filtered.map((item) => {
+        const origIdx = FRIENDS_FEED.indexOf(item);
+        return `
         <article class="friend-feed-card" id="${item.id}">
           <div class="friend-feed-author-row">
             <div class="friend-feed-author-left" onclick="showToast('${item.author}님의 프로필을 확인합니다')">
@@ -4107,15 +4109,15 @@
           <div class="friend-feed-body">
             <div class="friend-feed-actions">
               <div class="friend-feed-actions-left">
-                <button type="button" class="friend-feed-btn ${item.liked ? 'liked' : ''}" onclick="toggleFriendFeedLike(${idx})">
+                <button type="button" class="friend-feed-btn ${item.liked ? 'liked' : ''}" onclick="toggleFriendFeedLike(${origIdx})">
                   ${SVG_ICONS.heart}
-                  <span id="feedLikeCount_${idx}">${item.likes}</span>
+                  <span id="feedLikeCount_${origIdx}">${item.likes}</span>
                 </button>
-                <button type="button" class="friend-feed-btn" onclick="openFeedCommentDrawer(${idx})">
+                <button type="button" class="friend-feed-btn" onclick="openFeedCommentDrawer(${origIdx})">
                   ${SVG_ICONS.comment}
                   <span>${item.commentsCount}</span>
                 </button>
-                <button type="button" class="friend-feed-btn" onclick="shareFeedStory(${idx})">
+                <button type="button" class="friend-feed-btn" onclick="shareFeedStory(${origIdx})">
                   <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="22" y1="2" x2="11" y2="13"></line>
                     <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -4128,12 +4130,13 @@
               <strong>${item.author}</strong>${item.desc}
             </p>
 
-            <span class="friend-feed-comments-link" onclick="openFeedCommentDrawer(${idx})">
+            <span class="friend-feed-comments-link" onclick="openFeedCommentDrawer(${origIdx})">
               댓글 ${item.commentsCount}개 모두 보기
             </span>
           </div>
         </article>
-      `).join('');
+      `;
+      }).join('');
     }
 
     function toggleFriendFeedLike(idx) {
