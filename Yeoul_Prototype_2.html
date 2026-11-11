@@ -263,8 +263,10 @@
         display: flex;
         flex-direction: column;
         gap: 12px;
-        max-height: 212px;
+        max-height: 236px;
         overflow: hidden;
+        user-select: none;
+        -webkit-user-select: none;
         transition: max-height 0.38s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.25s ease, box-shadow 0.25s ease;
       }
 
@@ -371,8 +373,23 @@
         display: block;
       }
 
+      .story-bubble-item img {
+        -webkit-user-drag: none;
+        pointer-events: none;
+      }
+
       .story-bubble-name {
-        display: none !important;
+        display: block;
+        max-width: 66px;
+        font-size: 11px;
+        font-weight: 500;
+        line-height: 1.3;
+        color: var(--text-sub);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: center;
+        letter-spacing: -0.01em;
       }
 
       .globe-summary-row {
@@ -740,6 +757,237 @@
 
       .map-photo-pin.selected .map-pin-tail {
         border-top-color: #FFFFFF;
+      }
+
+      /* 지도 핀 방문 순서 뱃지 */
+      .pin-order-badge {
+        position: absolute;
+        top: -6px;
+        left: -4px;
+        z-index: 3;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #FFFFFF;
+        color: #0A0A0A;
+        font-size: 10px;
+        font-weight: 800;
+        line-height: 18px;
+        text-align: center;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* [+ 사진 추가] 솔리드 화이트 알약 버튼 */
+      .btn-add-photo {
+        padding: 7px 13px;
+        border-radius: 999px;
+        background: #FFFFFF;
+        color: #0A0A0A;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+        letter-spacing: -0.01em;
+        transition: transform 0.15s ease, opacity 0.15s ease;
+      }
+
+      .btn-add-photo:hover {
+        opacity: 0.9;
+      }
+
+      /* 장소 카드 AI 베스트 컷 뱃지 & 후보 사진 전환 */
+      .ai-best-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: rgba(10, 10, 10, 0.62);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        color: #FFFFFF;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-variant-numeric: tabular-nums;
+        transition: background-color 0.15s ease, transform 0.15s ease;
+      }
+
+      .ai-best-badge:hover {
+        background: rgba(20, 20, 20, 0.86);
+      }
+
+      .ai-best-badge.alt {
+        color: var(--text-sub);
+      }
+
+      .story-card-photo img {
+        transition: opacity 0.22s ease, filter 0.22s ease;
+      }
+
+      .story-card-photo.is-alt img {
+        filter: saturate(0.82) brightness(0.92);
+      }
+
+      .story-photo-dots {
+        position: absolute;
+        top: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 4px;
+        pointer-events: none;
+      }
+
+      .story-photo-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.4);
+        transition: background-color 0.18s ease, width 0.18s ease;
+      }
+
+      .story-photo-dot.on {
+        width: 14px;
+        border-radius: 999px;
+        background: #FFFFFF;
+      }
+
+      /* 사진 추가 & AI 베스트 컷 바텀시트 */
+      .add-photo-sub {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 3px;
+      }
+
+      .add-photo-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        overflow-y: auto;
+        scrollbar-width: none;
+        padding-bottom: 2px;
+      }
+
+      .add-photo-grid::-webkit-scrollbar {
+        display: none;
+      }
+
+      .add-photo-item {
+        position: relative;
+        border-radius: 16px;
+        overflow: hidden;
+        aspect-ratio: 1 / 1;
+        background: var(--bg-sub);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        text-align: left;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .add-photo-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: opacity 0.18s ease;
+      }
+
+      .add-photo-item.selected {
+        box-shadow: 0 0 0 2px #FFFFFF;
+      }
+
+      .add-photo-item.added img {
+        opacity: 0.38;
+      }
+
+      .add-photo-item::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0) 52%, rgba(0, 0, 0, 0.78) 100%);
+        pointer-events: none;
+      }
+
+      .ai-score-chip {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        z-index: 2;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: rgba(10, 10, 10, 0.66);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        color: #FFFFFF;
+        font-size: 10.5px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .add-photo-check {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        z-index: 2;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 1.5px solid rgba(255, 255, 255, 0.8);
+        background: rgba(10, 10, 10, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #0A0A0A;
+      }
+
+      .add-photo-item.selected .add-photo-check {
+        background: #FFFFFF;
+        border-color: #FFFFFF;
+      }
+
+      .add-photo-meta {
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        bottom: 9px;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+      }
+
+      .add-photo-name {
+        font-size: 13px;
+        font-weight: 700;
+        color: #FFFFFF;
+      }
+
+      .add-photo-time {
+        font-size: 10.5px;
+        color: rgba(255, 255, 255, 0.66);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .add-photo-cta {
+        width: 100%;
+        height: 50px;
+        border-radius: 999px;
+        background: #FFFFFF;
+        color: #0A0A0A;
+        font-size: 14px;
+        font-weight: 700;
+        flex-shrink: 0;
+        transition: opacity 0.15s ease, transform 0.15s ease;
+      }
+
+      .add-photo-cta:disabled {
+        opacity: 0.32;
+        cursor: not-allowed;
       }
 
       /* 하단 30%에서 시작해 스크롤 시 지도를 덮으며 올라오는 시트 */
@@ -2531,6 +2779,8 @@
               </span>
             </button>
 
+            <button type="button" class="btn-add-photo" onclick="openAddPhotoSheet()">+ 사진 추가</button>
+
             <button type="button" class="btn-header-share" onclick="openShareStudioModal()" aria-label="공유 카드 스튜디오 열기">
               <svg width="19" height="19" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
@@ -2711,8 +2961,27 @@
             </div>
 
             <div class="insta-route-map">
-              <svg class="insta-route-svg" viewBox="0 0 300 320" preserveAspectRatio="none">
-                <polyline points="195,45 95,120 75,205 185,275" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="2" stroke-dasharray="5,5"/>
+              <svg class="insta-route-svg" viewBox="0 0 300 320" preserveAspectRatio="none" aria-hidden="true">
+                <!-- 얇은 도로 그리드 -->
+                <g stroke="rgba(255,255,255,0.05)" stroke-width="1" fill="none">
+                  <path d="M0 40 L300 58"/>
+                  <path d="M0 96 L300 84"/>
+                  <path d="M0 150 L300 168"/>
+                  <path d="M0 236 L300 222"/>
+                  <path d="M0 290 L300 302"/>
+                  <path d="M38 0 L52 320"/>
+                  <path d="M150 0 L140 320"/>
+                  <path d="M232 0 L250 320"/>
+                </g>
+                <g stroke="rgba(255,255,255,0.075)" stroke-width="1.6" fill="none">
+                  <path d="M0 124 C 80 116, 170 140, 300 118"/>
+                  <path d="M196 0 C 210 90, 186 190, 214 320"/>
+                </g>
+                <!-- 블타바 강 -->
+                <path d="M118 -10 C 150 40, 160 70, 132 112 C 104 154, 112 196, 150 228 C 182 256, 168 296, 140 334" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="18" stroke-linecap="round"/>
+                <path d="M118 -10 C 150 40, 160 70, 132 112 C 104 154, 112 196, 150 228 C 182 256, 168 296, 140 334" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                <!-- 4개 장소를 잇는 곡선 경로 -->
+                <path d="M192 45 C 160 70, 120 92, 102 122 C 86 150, 70 180, 84 205 C 100 236, 150 252, 180 275" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.6" stroke-dasharray="4,5" stroke-linecap="round"/>
               </svg>
 
               <div class="insta-node" style="left:64%; top:14%;">
@@ -2775,6 +3044,24 @@
       </div>
 
       <!-- ===================================================================
+           전역 모달 3-1: 사진 추가 (EXIF 자동 군집화) & AI 베스트 컷 (#addPhotoSheetOverlay)
+           =================================================================== -->
+      <div class="sheet-overlay" id="addPhotoSheetOverlay" onclick="if(event.target===this)closeAddPhotoSheet()">
+        <div class="bottom-modal-sheet" aria-labelledby="addPhotoSheetTitle">
+          <div class="sheet-Grabber" style="align-self:center;"></div>
+          <div class="sheet-header-row">
+            <div>
+              <h3 class="sheet-header-title" id="addPhotoSheetTitle">새 사진 4장 · 프라하</h3>
+              <p class="add-photo-sub">촬영 위치와 시간으로 묶었어요</p>
+            </div>
+            <button type="button" class="sheet-header-action" onclick="closeAddPhotoSheet()">닫기</button>
+          </div>
+          <div class="add-photo-grid" id="addPhotoGrid"></div>
+          <button type="button" class="add-photo-cta" id="addPhotoCta" onclick="addSelectedPhotosToMap()">선택한 사진 지도에 자동 배치</button>
+        </div>
+      </div>
+
+      <!-- ===================================================================
            전역 모달 4: 동행자 & 친구 팔로우 바텀시트 (#companionSheetOverlay)
            =================================================================== -->
       <div class="sheet-overlay" id="companionSheetOverlay" onclick="if(event.target===this)closeCompanionSheet()">
@@ -2825,9 +3112,8 @@
       </button>
       <button type="button" class="tab-btn" id="tabAlbum" onclick="switchTab('album')" aria-label="친구 피드" title="친구 피드">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-          <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+          <circle cx="12" cy="12" r="10"></circle>
+          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
         </svg>
       </button>
       <button type="button" class="tab-btn" id="tabMy" onclick="switchTab('my')" aria-label="마이" title="마이">
@@ -3032,6 +3318,33 @@
       { id: 'hongkong', name: '홍콩', title: '홍콩', meta: '2025.02.14 - 02.17 · 4곳', lat: 22.3193, lng: 114.1694, globeLat: 21.0, globeLng: 113.5, photo: PHOTO_URLS.hongkong }
     ];
 
+    // 같은 장소에서 찍은 후보 컷 (구도·크롭이 다른 연사 컷)
+    function altShot(url, variant) {
+      const base = url.split('?')[0];
+      const crops = { alt1: 'crop=left&h=620', alt2: 'crop=bottom&h=640' };
+      return `${base}?auto=format&fit=crop&w=800&${crops[variant] || crops.alt1}&q=72`;
+    }
+
+    // 지구본 도시별 스토리 하이라이트 스팟
+    const CITY_SPOTS = {
+      tokyo: [
+        { name: '도쿄 타워', photo: 'https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?auto=format&fit=crop&w=800&q=80', comment: '밤에 불 켜지는 순간이 제일 예뻤음', song: 'Fujii Kaze - Shinunoga E-Wa' },
+        { name: '시부야 스카이', photo: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=800&q=80', comment: '스크램블 교차로가 한눈에 내려다보임', song: 'YOASOBI - Idol' },
+        { name: '센소지', photo: 'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?auto=format&fit=crop&w=800&q=80', comment: '아침 일찍 가니까 사람 없어서 좋았음', song: 'Joe Hisaishi - Summer' },
+        { name: '신주쿠', photo: PHOTO_URLS.tokyo, comment: '골목 이자카야 분위기 최고', song: 'Lamp - Yume' }
+      ],
+      osaka: [
+        { name: '도톤보리', photo: PHOTO_URLS.osaka, comment: '간판 불빛 아래 타코야키 필수', song: 'Kenshi Yonezu - Lemon' },
+        { name: '오사카 성', photo: 'https://images.unsplash.com/photo-1589452271712-64b8a66c7b71?auto=format&fit=crop&w=800&q=80', comment: '단풍이랑 같이 보니까 그림 같았음', song: 'Ryuichi Sakamoto - Merry Christmas Mr. Lawrence' },
+        { name: '우메다 공중정원', photo: 'https://images.unsplash.com/photo-1590253230532-a67f6bc61c9e?auto=format&fit=crop&w=800&q=80', comment: '해 지는 시간 맞춰 올라가길 잘함', song: 'Official HIGE DANdism - Pretender' }
+      ],
+      hongkong: [
+        { name: '빅토리아 피크', photo: PHOTO_URLS.hongkong, comment: '트램 타고 올라가서 본 야경', song: 'Leslie Cheung - Monica' },
+        { name: '침사추이', photo: 'https://images.unsplash.com/photo-1536599018102-9f803c140fc1?auto=format&fit=crop&w=800&q=80', comment: '심포니 오브 라이트 보면서 산책', song: 'Faye Wong - Dreams' },
+        { name: '템플 스트리트', photo: 'https://images.unsplash.com/photo-1594973782943-3314fe063f68?auto=format&fit=crop&w=800&q=80', comment: '야시장 딤섬이 생각보다 훨씬 맛있었음', song: 'Beyond - 海闊天空' }
+      ]
+    };
+
     const PLACES = [
       {
         id: 'castle',
@@ -3044,6 +3357,9 @@
         time: '12.21 16:48',
         song: 'JVKE - Golden Hour',
         photo: PHOTO_URLS.castle,
+        photos: [PHOTO_URLS.castle, altShot(PHOTO_URLS.castle, 'alt1')],
+        scores: [98, 89],
+        photoIdx: 0,
         comment: '올라가는 길은 좀 힘들었는데 위에서 본 뷰가 최고',
         chips: ['올라가는 길은 좀 힘들었는데 위에서 본 뷰가 최고', '해 질 녘에 가니까 풍경이 잘 보임', '생각보다 규모가 커서 볼 게 많았음'],
         likes: 24,
@@ -3064,6 +3380,9 @@
         time: '12.21 08:10',
         song: 'Ludovico Einaudi - Nuvole Bianche',
         photo: PHOTO_URLS.charles,
+        photos: [PHOTO_URLS.charles, altShot(PHOTO_URLS.charles, 'alt1')],
+        scores: [96, 87],
+        photoIdx: 0,
         comment: '아침 일찍 가니까 한산해서 사진 찍기 딱 좋음',
         chips: ['아침 일찍 가니까 한산해서 사진 찍기 딱 좋음', '다리 위에서 보는 강변 뷰가 좋음', '산책하면서 건너기 적당했음'],
         likes: 19,
@@ -3084,6 +3403,9 @@
         time: '12.20 18:14',
         song: 'Lauv - Paris in the Rain',
         photo: PHOTO_URLS.oldtown,
+        photos: [PHOTO_URLS.oldtown, altShot(PHOTO_URLS.oldtown, 'alt1')],
+        scores: [94, 88],
+        photoIdx: 0,
         comment: '사람 많았는데 야경은 진짜 좋았음',
         chips: ['사람 많았는데 야경은 진짜 좋았음', '시계탑 앞이 사진 찍기 좋았음', '근처 노점 음식이 괜찮았음'],
         likes: 31,
@@ -3104,6 +3426,9 @@
         time: '12.20 19:32',
         song: 'Claude Debussy - Clair de Lune',
         photo: PHOTO_URLS.vysehrad,
+        photos: [PHOTO_URLS.vysehrad, altShot(PHOTO_URLS.vysehrad, 'alt1')],
+        scores: [92, 84],
+        photoIdx: 0,
         comment: '',
         chips: [
           '야경 보면서 맥주 마시기 좋았음',
@@ -3120,18 +3445,29 @@
     ];
 
     const ALBUM_PHOTOS = [
-      { id: 'dancing', name: '댄싱 하우스', day: 2, companions: ['@hyun_seo'], time: '12.22 11:20', lat: 50.0755, lng: 14.4141, song: 'Chet Baker - Almost Blue', photo: PHOTO_URLS.dancing, selected: true },
-      { id: 'lennon', name: '존 레논 벽', day: 2, companions: ['@hyun_seo', '@seong_won'], time: '12.22 13:05', lat: 50.0862, lng: 14.4068, song: 'The Beatles - Imagine', photo: PHOTO_URLS.lennon, fallback: LENNON_FALLBACK_URL, selected: false },
-      { id: 'powder', name: '화약탑', day: 1, companions: ['@seong_won'], time: '12.22 15:40', lat: 50.0873, lng: 14.4278, song: 'Olafur Arnalds - Saman', photo: PHOTO_URLS.powder, selected: false },
-      { id: 'letna', name: '레트나 공원', day: 2, companions: ['@hyun_seo', '@seong_won'], time: '12.22 17:10', lat: 50.0948, lng: 14.4158, song: 'Novo Amor - Anchor', photo: PHOTO_URLS.letna, selected: false }
+      { id: 'dancing', name: '댄싱 하우스', day: 2, companions: ['@hyun_seo'], time: '12.21 11:20', lat: 50.0755, lng: 14.4141, song: 'Chet Baker - Almost Blue', photo: PHOTO_URLS.dancing, aiScore: 98, altScore: 90, selected: true, added: false },
+      { id: 'lennon', name: '존 레논 벽', day: 2, companions: ['@hyun_seo', '@seong_won'], time: '12.21 13:05', lat: 50.0862, lng: 14.4068, song: 'The Beatles - Imagine', photo: LENNON_FALLBACK_URL, aiScore: 94, altScore: 86, selected: false, added: false },
+      { id: 'powder', name: '화약탑', day: 1, companions: ['@seong_won'], time: '12.20 15:40', lat: 50.0873, lng: 14.4278, song: 'Olafur Arnalds - Saman', photo: PHOTO_URLS.powder, aiScore: 91, altScore: 83, selected: false, added: false },
+      { id: 'letna', name: '레트나 공원', day: 2, companions: ['@hyun_seo', '@seong_won'], time: '12.21 17:40', lat: 50.0948, lng: 14.4158, song: 'Novo Amor - Anchor', photo: PHOTO_URLS.letna, aiScore: 95, altScore: 88, selected: false, added: false }
     ];
 
     let currentCityId = 'prague';
     let currentPlaceIdx = 0;
     let activeGroupFilter = 'all';
     let activeCommentPlaceIdx = 0;
+    // 댓글 시트 컨텍스트: 'place'(지도 장소) | 'feed'(친구 피드 게시물)
+    let activeCommentContext = 'place';
+    let activeCommentFeedIdx = 0;
     let activeDmThreadId = 'hyun_seo';
     let baseFriendCount = 10;
+
+    // 방문 순서 (촬영 시각 기준 정렬) -> { placeIdx: order }
+    function getVisitOrderMap() {
+      const sorted = PLACES.map((p, idx) => ({ idx, time: p.time })).sort((a, b) => a.time.localeCompare(b.time));
+      const map = {};
+      sorted.forEach((item, i) => { map[item.idx] = i + 1; });
+      return map;
+    }
 
     function getFilteredPlaces() {
       return PLACES.map((p, idx) => ({ place: p, idx })).filter(({ place }) => {
@@ -3203,6 +3539,13 @@
 
       document.getElementById('globeCardTitle').textContent = city.title;
       document.getElementById('globeCardMeta').textContent = city.meta;
+      renderStoryBubbles();
+    }
+
+    // 현재 지구본 도시의 스토리 목록 (프라하는 실제 PLACES와 연동)
+    function getCityStoryList(cityId) {
+      if ((cityId || currentCityId) === 'prague') return PLACES;
+      return CITY_SPOTS[cityId || currentCityId] || PLACES;
     }
 
     // 지구본 하단 시트 내 원형 스토리 하이라이트 버블 바 렌더링
@@ -3211,7 +3554,8 @@
       if (!bar) return;
       bar.innerHTML = '';
 
-      PLACES.forEach((place, idx) => {
+      const city = CITIES.find((c) => c.id === currentCityId) || CITIES[0];
+      getCityStoryList(currentCityId).forEach((place, idx) => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'story-bubble-item';
@@ -3219,8 +3563,9 @@
         btn.setAttribute('aria-label', `${place.name} 스토리 보기`);
         btn.innerHTML = `
           <div class="story-bubble-ring">
-            <img src="${place.photo}" alt="${place.name}" onerror="if(this.dataset.fb)this.src=this.dataset.fb" data-fb="${LENNON_FALLBACK_URL}">
+            <img src="${place.photo}" alt="" draggable="false" onerror="this.onerror=null;this.src='${city.photo}'">
           </div>
+          <span class="story-bubble-name">${place.name}</span>
         `;
         bar.appendChild(btn);
       });
@@ -3229,6 +3574,7 @@
     // 3. 탭 2: [지도 & 소셜 카드 뷰]
     let mapInstance = null;
     let mapMarkers = [];
+    let mapRouteLine = null;
 
     function initMap() {
       if (mapInstance || typeof L === 'undefined') return;
@@ -3287,8 +3633,29 @@
 
       mapMarkers.forEach((m) => m.remove());
       mapMarkers = [];
+      if (mapRouteLine) {
+        mapRouteLine.remove();
+        mapRouteLine = null;
+      }
 
       const filtered = getFilteredPlaces();
+      const orderMap = getVisitOrderMap();
+
+      // 방문 순서대로 잇는 정적 반투명 점선 동선
+      const routeLatLngs = filtered
+        .slice()
+        .sort((a, b) => orderMap[a.idx] - orderMap[b.idx])
+        .map(({ place }) => [place.lat, place.lng]);
+      if (routeLatLngs.length > 1) {
+        mapRouteLine = L.polyline(routeLatLngs, {
+          color: 'rgba(255,255,255,0.28)',
+          weight: 2,
+          dashArray: '4, 6',
+          lineCap: 'round',
+          interactive: false
+        }).addTo(mapInstance);
+      }
+
       filtered.forEach(({ place: p, idx }) => {
         const icon = L.divIcon({
           className: '',
@@ -3296,6 +3663,7 @@
           iconAnchor: [26, 56],
           html: `
             <div class="map-photo-pin ${idx === currentPlaceIdx ? 'selected' : ''}" id="mapPin_${idx}">
+              <span class="pin-order-badge">${orderMap[idx]}</span>
               <div class="map-pin-box">
                 <img src="${p.photo}" alt="${p.name}" onerror="if(this.dataset.fb)this.src=this.dataset.fb" data-fb="${LENNON_FALLBACK_URL}">
               </div>
@@ -3326,6 +3694,9 @@
         const isPlayingThis = isPlayingAudio && playingPlaceIdx === idx;
         const companionLabel = place.companions.join(' · ');
         const latestComment = place.comments[place.comments.length - 1];
+        const photos = place.photos && place.photos.length ? place.photos : [place.photo];
+        const scores = place.scores || [];
+        const photoIdx = Math.min(place.photoIdx || 0, photos.length - 1);
 
         const memoHtml = (place.comment && place.comment.trim() !== '')
           ? `<p class="story-memo-text">${place.comment}</p>`
@@ -3347,8 +3718,10 @@
           : '';
 
         card.innerHTML = `
-          <div class="story-card-photo">
-            <img src="${place.photo}" alt="${place.name}" onerror="if(this.dataset.fb)this.src=this.dataset.fb" data-fb="${LENNON_FALLBACK_URL}">
+          <div class="story-card-photo ${photoIdx > 0 ? 'is-alt' : ''}" id="storyPhoto_${idx}" onclick="event.stopPropagation(); cyclePlacePhoto(${idx})">
+            <img src="${photos[photoIdx]}" alt="${place.name}" onerror="this.onerror=null;this.src='${place.photo}'">
+            ${photos.length > 1 ? `<div class="story-photo-dots">${photos.map((_, i) => `<span class="story-photo-dot ${i === photoIdx ? 'on' : ''}"></span>`).join('')}</div>` : ''}
+            ${scores.length ? `<button type="button" class="ai-best-badge ${photoIdx > 0 ? 'alt' : ''}" onclick="event.stopPropagation(); cyclePlacePhoto(${idx})" aria-label="AI 베스트 컷 비교">${photoIdx === 0 ? `✦ AI Best ${scores[0]}` : `후보 컷 ${scores[photoIdx]}`}</button>` : ''}
             <button type="button" class="companion-tag-pill" onclick="event.stopPropagation(); openCompanionSheet()">
               ${SVG_ICONS.user}
               <span>${companionLabel}</span>
@@ -3379,6 +3752,32 @@
         `;
         feed.appendChild(card);
       });
+    }
+
+    // AI 베스트 컷 <-> 후보 컷 즉시 비교 전환
+    function cyclePlacePhoto(idx) {
+      const place = PLACES[idx];
+      if (!place || !place.photos || place.photos.length < 2) return;
+      place.photoIdx = ((place.photoIdx || 0) + 1) % place.photos.length;
+      const wrap = document.getElementById(`storyPhoto_${idx}`);
+      if (!wrap) {
+        renderStoryFeed();
+        return;
+      }
+      const pi = place.photoIdx;
+      const img = wrap.querySelector('img');
+      img.style.opacity = '0.4';
+      setTimeout(() => {
+        img.src = place.photos[pi];
+        img.style.opacity = '1';
+      }, 120);
+      wrap.classList.toggle('is-alt', pi > 0);
+      wrap.querySelectorAll('.story-photo-dot').forEach((d, i) => d.classList.toggle('on', i === pi));
+      const badge = wrap.querySelector('.ai-best-badge');
+      if (badge) {
+        badge.classList.toggle('alt', pi > 0);
+        badge.textContent = pi === 0 ? `✦ AI Best ${place.scores[0]}` : `후보 컷 ${place.scores[pi]}`;
+      }
     }
 
     function focusPlace(idx, scrollCardIntoView) {
@@ -3414,7 +3813,9 @@
     }
 
     function openCommentSheet(idx) {
+      activeCommentContext = 'place';
       activeCommentPlaceIdx = idx;
+      document.getElementById('commentInputField').placeholder = '이 장소에 댓글 남기기...';
       const place = PLACES[idx];
       if (!place) return;
       document.getElementById('commentSheetTitle').textContent = `${place.name} 댓글 (${place.comments.length})`;
@@ -3429,12 +3830,21 @@
       document.getElementById('commentSheetOverlay').classList.remove('open');
     }
 
-    function renderCommentDrawerList() {
+    function getActiveCommentTarget() {
+      if (activeCommentContext === 'feed') {
+        const post = FRIENDS_FEED[activeCommentFeedIdx];
+        return post ? { comments: post.comments, title: `${post.author}님의 게시물 댓글 (${post.comments.length})` } : null;
+      }
       const place = PLACES[activeCommentPlaceIdx];
-      const list = document.getElementById('commentDrawerList');
-      if (!place || !list) return;
+      return place ? { comments: place.comments, title: `${place.name} 댓글 (${place.comments.length})` } : null;
+    }
 
-      list.innerHTML = place.comments.map((c) => `
+    function renderCommentDrawerList() {
+      const target = getActiveCommentTarget();
+      const list = document.getElementById('commentDrawerList');
+      if (!target || !list) return;
+
+      list.innerHTML = target.comments.map((c) => `
         <div class="comment-drawer-item">
           <img class="comment-avatar" src="${c.avatar || AVATAR_URLS.hyun_seo}" alt="${c.user}">
           <div class="comment-body">
@@ -3452,19 +3862,23 @@
       const text = (input.value || '').trim();
       if (!text) return;
 
-      const place = PLACES[activeCommentPlaceIdx];
-      if (!place) return;
+      const target = getActiveCommentTarget();
+      if (!target) return;
 
-      place.comments.push({
+      target.comments.push({
         user: '김성원',
         avatar: AVATAR_URLS.seong_won,
         text
       });
 
       input.value = '';
-      document.getElementById('commentSheetTitle').textContent = `${place.name} 댓글 (${place.comments.length})`;
+      document.getElementById('commentSheetTitle').textContent = getActiveCommentTarget().title;
       renderCommentDrawerList();
-      renderStoryFeed();
+      if (activeCommentContext === 'feed') {
+        renderFriendsFeed();
+      } else {
+        renderStoryFeed();
+      }
       showToast('댓글이 등록되었습니다');
     }
 
@@ -3530,8 +3944,7 @@
         }, 180);
       } else if (item.type === 'album') {
         collapseGlobeSheet();
-        switchTab('album');
-        showToast(`${item.user}님이 공유한 여행 피드로 이동합니다`);
+        setTimeout(() => openAddPhotoSheet(), 200);
       } else if (item.type === 'follow') {
         toggleUserFollow(item.userIdx);
         renderActivityFeed();
@@ -3578,6 +3991,60 @@
       sheet.addEventListener('touchend', () => {
         isDragging = false;
       }, { passive: true });
+
+      // 데스크톱 마우스 드래그 (pointer events)
+      let pStartY = 0;
+      let pActive = false;
+      let pDragged = false;
+
+      const onPointerDown = (e) => {
+        if (e.pointerType === 'touch') return; // 터치는 위 touch 핸들러가 처리
+        if (e.button !== 0) return;
+        pStartY = e.clientY;
+        pActive = true;
+        pDragged = false;
+      };
+
+      const onPointerMove = (e) => {
+        if (!pActive) return;
+        const diff = e.clientY - pStartY;
+        if (diff < -30 && !globeSheetExpanded) {
+          expandGlobeSheet();
+          pDragged = true;
+          pActive = false;
+        } else if (diff > 30 && globeSheetExpanded && sheet.scrollTop <= 0) {
+          collapseGlobeSheet();
+          pDragged = true;
+          pActive = false;
+        } else if (Math.abs(diff) > 6) {
+          pDragged = true;
+        }
+      };
+
+      const onPointerUp = () => {
+        pActive = false;
+      };
+
+      const grabber = document.getElementById('globeGrabberZone');
+      sheet.addEventListener('pointerdown', onPointerDown);
+      if (grabber) {
+        grabber.addEventListener('pointerdown', (e) => {
+          e.stopPropagation();
+          onPointerDown(e);
+        });
+      }
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+      window.addEventListener('pointercancel', onPointerUp);
+
+      // 드래그 직후 발생하는 click(그랩바 토글·버블 열기) 무시
+      sheet.addEventListener('click', (e) => {
+        if (pDragged) {
+          e.stopPropagation();
+          e.preventDefault();
+          pDragged = false;
+        }
+      }, true);
 
       sheet.addEventListener('wheel', (e) => {
         if (!globeSheetExpanded && e.deltaY > 15) {
@@ -3811,8 +4278,10 @@
     // 풀스크린 스토리 뷰어 & 공유 스튜디오 모달 제어
     let activeStoryIdx = 0;
     let storyAutoTimer = null;
+    let activeStoryList = PLACES;
 
     function openStoryViewer(startIdx) {
+      activeStoryList = getCityStoryList(currentCityId);
       activeStoryIdx = startIdx !== undefined ? startIdx : 0;
       document.getElementById('storyViewerModal').classList.add('open');
       updateStorySlide();
@@ -3827,7 +4296,7 @@
       const next = activeStoryIdx + delta;
       if (next < 0) {
         activeStoryIdx = 0;
-      } else if (next >= PLACES.length) {
+      } else if (next >= activeStoryList.length) {
         closeStoryViewer();
         return;
       } else {
@@ -3838,25 +4307,26 @@
 
     function updateStorySlide() {
       clearTimeout(storyAutoTimer);
-      const place = PLACES[activeStoryIdx];
+      const place = activeStoryList[activeStoryIdx];
       if (!place) return;
 
       document.getElementById('storyViewerImg').src = place.photo;
-      document.getElementById('storyViewerAvatar').src = place.authorAvatar || AVATAR_URLS.hyun_seo;
+      document.getElementById('storyViewerAvatar').src = place.authorAvatar || AVATAR_URLS.seong_won;
       document.getElementById('storyViewerPlace').textContent = place.name;
 
-      const mainCompanion = place.companions[0] || '@hyun_seo';
-      const extraCount = Math.max(0, place.companions.length - 1);
+      const companions = place.companions || ['@seong_won'];
+      const mainCompanion = companions[0] || '@hyun_seo';
+      const extraCount = Math.max(0, companions.length - 1);
       document.getElementById('storyViewerSub').textContent = extraCount > 0 ? `${mainCompanion} 외 ${extraCount}명` : mainCompanion;
 
       document.getElementById('storyViewerCaption').textContent = place.comment || '바람은 좀 불었지만 뷰가 탁 트여 있음';
-      document.getElementById('storyViewerMusic').textContent = `♫ ${place.song}`;
+      document.getElementById('storyViewerMusic').textContent = `♫ ${place.song || 'JVKE - Golden Hour'}`;
 
       const heartBtn = document.getElementById('storyHeartBtn');
       if (heartBtn) heartBtn.classList.toggle('liked', Boolean(place.liked));
 
       const progRow = document.getElementById('storyProgressRow');
-      progRow.innerHTML = PLACES.map((_, i) => `
+      progRow.innerHTML = activeStoryList.map((_, i) => `
         <div class="story-progress-seg">
           <div class="story-progress-fill" style="width:${i < activeStoryIdx ? '100%' : (i === activeStoryIdx ? '100%' : '0%')}"></div>
         </div>
@@ -3868,10 +4338,10 @@
     }
 
     function toggleStoryViewerLike() {
-      const place = PLACES[activeStoryIdx];
+      const place = activeStoryList[activeStoryIdx];
       if (!place) return;
       place.liked = !place.liked;
-      place.likes += place.liked ? 1 : -1;
+      place.likes = (place.likes || 0) + (place.liked ? 1 : -1);
       document.getElementById('storyHeartBtn').classList.toggle('liked', place.liked);
       renderStoryFeed();
       if (place.liked) showToast('스토리에 공감했습니다');
@@ -3882,8 +4352,9 @@
         e.preventDefault();
         const val = (e.target.value || '').trim();
         if (!val) return;
-        const place = PLACES[activeStoryIdx];
+        const place = activeStoryList[activeStoryIdx];
         if (place) {
+          if (!place.comments) place.comments = [];
           place.comments.push({
             user: '김성원',
             avatar: AVATAR_URLS.seong_won,
@@ -3913,8 +4384,11 @@
     }
 
     function sharePlaceToStoryCard() {
+      const isPrague = activeStoryList === PLACES;
+      const spot = activeStoryList[activeStoryIdx];
       closeStoryViewer();
-      openShareStudioModal(activeStoryIdx);
+      openShareStudioModal(isPrague ? activeStoryIdx : undefined);
+      if (!isPrague && spot) document.getElementById('instaBgImg').src = spot.photo;
       showToast('동행자 태그와 함께 공유 스튜디오가 열렸습니다');
     }
 
@@ -3999,7 +4473,11 @@
         tag: '@hyun_seo · @seong_won',
         likes: 38,
         liked: false,
-        commentsCount: 5,
+        comments: [
+          { user: '김성원', avatar: AVATAR_URLS.seong_won, text: '이 노을 색감 뭐야 진짜 필름 같다' },
+          { user: '송민경', avatar: AVATAR_URLS.min_kyung, text: '댄싱 하우스 옥상 바도 갔어?' },
+          { user: '최현서', avatar: AVATAR_URLS.hyun_seo, text: '응 거기서 이 사진 찍었어 ㅎㅎ' }
+        ],
         isCompanion: true
       },
       {
@@ -4015,7 +4493,10 @@
         tag: '@min_kyung',
         likes: 54,
         liked: true,
-        commentsCount: 9,
+        comments: [
+          { user: '최현서', avatar: AVATAR_URLS.hyun_seo, text: '레트나 비어가든 또 가고 싶다' },
+          { user: '이산하', avatar: AVATAR_URLS.san_ha, text: '다리 겹쳐 보이는 구도 미쳤다' }
+        ],
         isCompanion: true
       },
       {
@@ -4031,7 +4512,10 @@
         tag: '@doyun_k',
         likes: 82,
         liked: false,
-        commentsCount: 14,
+        comments: [
+          { user: '정유진', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=160&h=160&q=80', text: '후지산까지 보이는 날 드문데 운 좋았다!' },
+          { user: '김성원', avatar: AVATAR_URLS.seong_won, text: '시부야 스카이 예약 어떻게 했어?' }
+        ],
         isCompanion: false
       },
       {
@@ -4047,7 +4531,9 @@
         tag: '@yujin_travel',
         likes: 47,
         liked: false,
-        commentsCount: 7,
+        comments: [
+          { user: '박성희', avatar: AVATAR_URLS.seong_hee, text: '여기 메시지 남기고 왔어?' }
+        ],
         isCompanion: false
       }
     ];
@@ -4115,7 +4601,7 @@
                 </button>
                 <button type="button" class="friend-feed-btn" onclick="openFeedCommentDrawer(${origIdx})">
                   ${SVG_ICONS.comment}
-                  <span>${item.commentsCount}</span>
+                  <span>${item.comments.length}</span>
                 </button>
                 <button type="button" class="friend-feed-btn" onclick="shareFeedStory(${origIdx})">
                   <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -4131,7 +4617,7 @@
             </p>
 
             <span class="friend-feed-comments-link" onclick="openFeedCommentDrawer(${origIdx})">
-              댓글 ${item.commentsCount}개 모두 보기
+              댓글 ${item.comments.length}개 모두 보기
             </span>
           </div>
         </article>
@@ -4151,8 +4637,10 @@
     function openFeedCommentDrawer(idx) {
       const item = FRIENDS_FEED[idx];
       if (!item) return;
-      activeCommentPlaceIdx = 0;
-      document.getElementById('commentSheetTitle').textContent = `${item.author}님의 피드 댓글`;
+      activeCommentContext = 'feed';
+      activeCommentFeedIdx = idx;
+      document.getElementById('commentSheetTitle').textContent = getActiveCommentTarget().title;
+      document.getElementById('commentInputField').placeholder = `${item.author}님에게 댓글 남기기...`;
       renderCommentDrawerList();
       document.getElementById('commentSheetOverlay').classList.add('open');
     }
@@ -4173,8 +4661,306 @@
       document.getElementById('instaDomCard').classList.toggle('post-4-5', fmt === 'post');
     }
 
+    // 사진 추가 (EXIF 자동 군집화) & AI 베스트 컷 시트
+    const CHECK_SVG = `<svg width="12" height="12" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
+    function openAddPhotoSheet() {
+      renderAddPhotoGrid();
+      document.getElementById('addPhotoSheetOverlay').classList.add('open');
+    }
+
+    function closeAddPhotoSheet() {
+      document.getElementById('addPhotoSheetOverlay').classList.remove('open');
+    }
+
+    function renderAddPhotoGrid() {
+      const grid = document.getElementById('addPhotoGrid');
+      if (!grid) return;
+      const remaining = ALBUM_PHOTOS.filter((p) => !p.added).length;
+      document.getElementById('addPhotoSheetTitle').textContent = remaining > 0 ? `새 사진 ${remaining}장 · 프라하` : '모든 사진이 지도에 배치됐어요';
+
+      grid.innerHTML = ALBUM_PHOTOS.map((p, i) => `
+        <button type="button" class="add-photo-item ${p.selected && !p.added ? 'selected' : ''} ${p.added ? 'added' : ''}" onclick="toggleAlbumPhoto(${i})" ${p.added ? 'disabled' : ''} aria-pressed="${p.selected && !p.added}">
+          <img src="${p.photo}" alt="${p.name}" onerror="this.onerror=null;this.src='${PHOTO_URLS.castle}'">
+          <span class="add-photo-check">${p.selected && !p.added ? CHECK_SVG : ''}</span>
+          <span class="ai-score-chip">${i === 0 ? '✦ ' : ''}AI ${p.aiScore}점</span>
+          <span class="add-photo-meta">
+            <span class="add-photo-name">${p.name}</span>
+            <span class="add-photo-time">${p.added ? '지도에 배치됨' : `Day ${p.day} · ${p.time.split(' ')[1]}`}</span>
+          </span>
+        </button>
+      `).join('');
+
+      const count = ALBUM_PHOTOS.filter((p) => p.selected && !p.added).length;
+      const cta = document.getElementById('addPhotoCta');
+      cta.disabled = count === 0;
+      cta.textContent = count > 0 ? `선택한 사진 지도에 자동 배치 · ${count}` : '선택한 사진 지도에 자동 배치';
+    }
+
+    function toggleAlbumPhoto(i) {
+      const p = ALBUM_PHOTOS[i];
+      if (!p || p.added) return;
+      p.selected = !p.selected;
+      renderAddPhotoGrid();
+    }
+
+    function addSelectedPhotosToMap() {
+      const picks = ALBUM_PHOTOS.filter((p) => p.selected && !p.added);
+      if (picks.length === 0) return;
+
+      let lastIdx = -1;
+      picks.forEach((p) => {
+        PLACES.push({
+          id: p.id,
+          name: p.name,
+          day: p.day,
+          companions: p.companions.slice(),
+          authorAvatar: AVATAR_URLS.seong_won,
+          lat: p.lat,
+          lng: p.lng,
+          time: p.time,
+          song: p.song,
+          photo: p.photo,
+          photos: [p.photo, altShot(p.photo, 'alt2')],
+          scores: [p.aiScore, p.altScore],
+          photoIdx: 0,
+          comment: '',
+          chips: ['생각보다 훨씬 좋았음', '사진 찍기 좋은 스팟', '다음에 또 오고 싶음'],
+          likes: 0,
+          liked: false,
+          comments: []
+        });
+        p.added = true;
+        p.selected = false;
+        lastIdx = PLACES.length - 1;
+      });
+
+      const prague = CITIES.find((c) => c.id === 'prague');
+      if (prague) {
+        prague.meta = `2026.12.20 - 12.21 · ${PLACES.length}곳`;
+        if (currentCityId === 'prague') document.getElementById('globeCardMeta').textContent = prague.meta;
+      }
+
+      closeAddPhotoSheet();
+      activeGroupFilter = 'all';
+      currentPlaceIdx = lastIdx;
+
+      const isOnMap = document.getElementById('screenMap').classList.contains('active');
+      if (!isOnMap) switchTab('map');
+
+      setTimeout(() => {
+        initMap();
+        renderGroupFilterBar();
+        renderMapMarkers();
+        renderStoryFeed();
+        renderStoryBubbles();
+        const place = PLACES[lastIdx];
+        if (mapInstance && place) {
+          mapInstance.invalidateSize();
+          mapInstance.flyTo([place.lat, place.lng], 16, { duration: 1.1 });
+        }
+        const card = document.getElementById(`storyCard_${lastIdx}`);
+        if (card) setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'center' }), 500);
+        showToast(`${picks.length}곳이 촬영 위치에 자동 배치됐어요`);
+      }, isOnMap ? 260 : 420);
+    }
+
+    // 공유 카드 -> 1080x1920 PNG (순수 캔버스 벡터 드로잉, 외부 이미지 미사용)
     function saveShareImage() {
-      showToast('이미지 저장됨');
+      const W = 1080;
+      const H = 1920;
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      const FONT = '-apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif';
+
+      const companions = (document.getElementById('instaCompanionBadge').textContent || '@hyun_seo @seong_won').trim().split(/\s+/).join(' · ');
+      const song = (document.getElementById('instaMusicText').textContent || '♫ JVKE - Golden Hour').trim();
+
+      // 배경
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, '#141414');
+      bg.addColorStop(0.55, '#0D0D0D');
+      bg.addColorStop(1, '#0A0A0A');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      // 지도 영역 좌표계 (SVG 300x320 -> 캔버스)
+      const MX = 60;
+      const MY = 420;
+      const MW = W - 120;
+      const MH = 1080;
+      const sx = (x) => MX + (x / 300) * MW;
+      const sy = (y) => MY + (y / 320) * MH;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, MY - 80, W, MH + 160);
+      ctx.clip();
+
+      // 도로 그리드
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 2;
+      [[0, 40, 300, 58], [0, 96, 300, 84], [0, 150, 300, 168], [0, 236, 300, 222], [0, 290, 300, 302],
+       [38, 0, 52, 320], [150, 0, 140, 320], [232, 0, 250, 320]].forEach(([x1, y1, x2, y2]) => {
+        ctx.beginPath();
+        ctx.moveTo(sx(x1), sy(y1));
+        ctx.lineTo(sx(x2), sy(y2));
+        ctx.stroke();
+      });
+      ctx.strokeStyle = 'rgba(255,255,255,0.075)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(sx(0), sy(124));
+      ctx.bezierCurveTo(sx(80), sy(116), sx(170), sy(140), sx(300), sy(118));
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(sx(196), sy(0));
+      ctx.bezierCurveTo(sx(210), sy(90), sx(186), sy(190), sx(214), sy(320));
+      ctx.stroke();
+
+      // 블타바 강
+      const river = () => {
+        ctx.beginPath();
+        ctx.moveTo(sx(118), sy(-10));
+        ctx.bezierCurveTo(sx(150), sy(40), sx(160), sy(70), sx(132), sy(112));
+        ctx.bezierCurveTo(sx(104), sy(154), sx(112), sy(196), sx(150), sy(228));
+        ctx.bezierCurveTo(sx(182), sy(256), sx(168), sy(296), sx(140), sy(334));
+      };
+      ctx.lineCap = 'round';
+      river();
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 58;
+      ctx.stroke();
+      river();
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.font = `600 22px ${FONT}`;
+      ctx.fillStyle = 'rgba(255,255,255,0.22)';
+      ctx.save();
+      ctx.translate(sx(150) + 34, sy(238));
+      ctx.rotate(0.9);
+      ctx.fillText('VLTAVA', 0, 0);
+      ctx.restore();
+
+      // 곡선 경로
+      ctx.setLineDash([14, 16]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(sx(192), sy(45));
+      ctx.bezierCurveTo(sx(160), sy(70), sx(120), sy(92), sx(102), sy(122));
+      ctx.bezierCurveTo(sx(86), sy(150), sx(70), sy(180), sx(84), sy(205));
+      ctx.bezierCurveTo(sx(100), sy(236), sx(150), sy(252), sx(180), sy(275));
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 4개 지점 마커
+      const nodes = [
+        { x: 192, y: 45, label: '구시가지 광장', side: 'right' },
+        { x: 102, y: 122, label: '카를교', side: 'right' },
+        { x: 84, y: 205, label: '프라하 성', side: 'right' },
+        { x: 180, y: 275, label: '비셰흐라드', side: 'right' }
+      ];
+      nodes.forEach((n, i) => {
+        const cx = sx(n.x);
+        const cy = sy(n.y);
+        ctx.beginPath();
+        ctx.arc(cx, cy, 46, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx, cy, 26, 0, Math.PI * 2);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fill();
+        ctx.fillStyle = '#0A0A0A';
+        ctx.font = `800 26px ${FONT}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(i + 1), cx, cy + 1);
+
+        ctx.textAlign = 'left';
+        ctx.font = `700 34px ${FONT}`;
+        const tw = ctx.measureText(n.label).width;
+        const px = cx + 50;
+        ctx.fillStyle = 'rgba(20,20,20,0.86)';
+        roundRect(ctx, px, cy - 30, tw + 40, 60, 30);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = '#F5F5F5';
+        ctx.fillText(n.label, px + 20, cy + 1);
+      });
+      ctx.restore();
+      ctx.textBaseline = 'alphabetic';
+      ctx.textAlign = 'left';
+
+      // 상단 타이틀
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = `600 28px ${FONT}`;
+      ctx.fillText('YEOUL · TRAVEL RECAP', 80, 150);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = `800 132px ${FONT}`;
+      ctx.fillText('PRAGUE', 72, 280);
+      ctx.fillStyle = '#A3A3A3';
+      ctx.font = `500 36px ${FONT}`;
+      ctx.fillText('2026.12.20 – 12.21  ·  4 places', 80, 340);
+
+      // 동행자 태그
+      ctx.font = `600 30px ${FONT}`;
+      const cw = ctx.measureText(companions).width;
+      ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      roundRect(ctx, W - 80 - cw - 48, 108, cw + 48, 60, 30);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(companions, W - 80 - cw - 24, 148);
+
+      // 하단 대표곡
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      ctx.fillRect(80, H - 300, W - 160, 2);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = `700 44px ${FONT}`;
+      ctx.fillText(song, 80, H - 210);
+      ctx.fillStyle = '#737373';
+      ctx.font = `500 30px ${FONT}`;
+      ctx.fillText(companions, 80, H - 158);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.font = `700 28px ${FONT}`;
+      ctx.fillText('yeoul', W - 80, H - 158);
+
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          showToast('이미지를 만들지 못했어요');
+          return;
+        }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'yeoul_prague_story.png';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+        showToast('yeoul_prague_story.png 저장됨');
+      }, 'image/png');
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
     }
 
     // 탭 전환 컨트롤러 (globe, map, album, my)
