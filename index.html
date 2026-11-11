@@ -3870,38 +3870,47 @@
 
     function initGlobe() {
       const container = document.getElementById('globeContainer');
-      if (!container || typeof Globe !== 'function') return;
+      if (!container || typeof Globe !== 'function') {
+        renderStoryBubbles();
+        return;
+      }
 
-      globeObj = Globe()(container)
-        .width(398)
-        .height(786)
-        .backgroundColor('#0A0A0A')
-        .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-        .atmosphereColor('#A3A3A3')
-        .atmosphereAltitude(0.1)
-        .htmlElementsData(CITIES)
-        .htmlLat((d) => d.globeLat)
-        .htmlLng((d) => d.globeLng)
-        .htmlAltitude(0)
-        .htmlElement((d) => {
-          const host = document.createElement('div');
-          host.className = 'globe-pin-host';
-          host.innerHTML = `
-            <div class="globe-pin-anchor ${d.id === currentCityId ? 'active' : ''}" id="globePin_${d.id}">
-              <div class="globe-pin-frame">
-                <img src="${d.photo}" alt="${d.name}">
+      try {
+        globeObj = Globe()(container)
+          .width(398)
+          .height(786)
+          .backgroundColor('#0A0A0A')
+          .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+          .atmosphereColor('#A3A3A3')
+          .atmosphereAltitude(0.1)
+          .htmlElementsData(CITIES)
+          .htmlLat((d) => d.globeLat)
+          .htmlLng((d) => d.globeLng)
+          .htmlAltitude(0)
+          .htmlElement((d) => {
+            const host = document.createElement('div');
+            host.className = 'globe-pin-host';
+            host.innerHTML = `
+              <div class="globe-pin-anchor ${d.id === currentCityId ? 'active' : ''}" id="globePin_${d.id}">
+                <div class="globe-pin-frame">
+                  <img src="${d.photo}" alt="${d.name}">
+                </div>
+                <div class="globe-pin-tail"></div>
               </div>
-              <div class="globe-pin-tail"></div>
-            </div>
-          `;
-          host.querySelector('.globe-pin-anchor').onclick = (e) => {
-            e.stopPropagation();
-            selectCityOnGlobe(d.id, true);
-          };
-          return host;
-        });
+            `;
+            host.querySelector('.globe-pin-anchor').onclick = (e) => {
+              e.stopPropagation();
+              selectCityOnGlobe(d.id, true);
+            };
+            return host;
+          });
 
-      globeObj.pointOfView({ lat: 35.0, lng: 75.0, altitude: 2.9 }, 0);
+        globeObj.pointOfView({ lat: 35.0, lng: 75.0, altitude: 2.9 }, 0);
+      } catch (err) {
+        console.warn('WebGL globe unavailable:', err);
+        globeObj = null;
+        container.innerHTML = `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 42%, #1e2430 0%, #0d0d0d 55%, #0A0A0A 75%);"><div style="width:270px;height:270px;border-radius:50%;border:1px solid rgba(255,255,255,0.12);background:radial-gradient(circle at 38% 35%, rgba(255,255,255,0.12), rgba(20,24,32,0.92) 65%, #050505);box-shadow:0 0 60px rgba(255,255,255,0.06);"></div></div>`;
+      }
       renderStoryBubbles();
     }
 
