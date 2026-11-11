@@ -1,0 +1,13 @@
+{
+  "name": "yeoul-prototype",
+  "version": "1.0.0",
+  "description": "여울 (YEOUL) 여행 아카이빙 & 소셜 지도 프로토타입 Node.js 백엔드",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}

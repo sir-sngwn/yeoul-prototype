@@ -3613,9 +3613,68 @@
 
     // 같은 장소에서 찍은 후보 컷 (구도·크롭이 다른 연사 컷)
     function altShot(url, variant) {
+      if (!url || url.startsWith('data:') || url.startsWith('/uploads/')) return url;
       const base = url.split('?')[0];
       const crops = { alt1: 'crop=left&h=620', alt2: 'crop=bottom&h=640' };
       return `${base}?auto=format&fit=crop&w=800&${crops[variant] || crops.alt1}&q=72`;
+    }
+
+    // Node.js 백엔드 연동 헬퍼 (정적 호스팅/오프라인 시 자동 폴백)
+    let apiEnabled = false;
+
+    function replaceArrayInPlace(target, nextItems) {
+      if (!Array.isArray(target) || !Array.isArray(nextItems)) return;
+      target.splice(0, target.length, ...nextItems);
+    }
+
+    async function syncApi(path, method, body) {
+      if (!apiEnabled) return null;
+      try {
+        const res = await fetch(path, {
+          method: method || 'POST',
+          headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+          body: body !== undefined ? JSON.stringify(body) : undefined
+        });
+        const ct = res.headers.get('content-type') || '';
+        if (!res.ok || !ct.includes('application/json')) return null;
+        return await res.json();
+      } catch (err) {
+        console.warn('API sync skipped:', path, err.message);
+        return null;
+      }
+    }
+
+    async function loadStateFromServer() {
+      if (!location.protocol.startsWith('http')) return false;
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 2000);
+        const res = await fetch('/api/state', { signal: controller.signal });
+        clearTimeout(timer);
+        const ct = res.headers.get('content-type') || '';
+        if (!res.ok || !ct.includes('application/json')) return false;
+        const data = await res.json();
+        if (!data || !Array.isArray(data.places)) return false;
+
+        apiEnabled = true;
+        replaceArrayInPlace(COMPANION_USERS, data.companionUsers);
+        replaceArrayInPlace(ACTIVITY_FEED, data.activityFeed);
+        replaceArrayInPlace(DM_THREADS, data.dmThreads);
+        replaceArrayInPlace(PLACES, data.places);
+        replaceArrayInPlace(ALBUM_PHOTOS, data.albumPhotos);
+        replaceArrayInPlace(FRIENDS_FEED, data.friendsFeed);
+
+        const prague = CITIES.find((c) => c.id === 'prague');
+        if (prague) {
+          prague.meta = `2026.12.20 - 12.21 · ${PLACES.length}곳`;
+          const metaEl = document.getElementById('globeCardMeta');
+          if (metaEl && currentCityId === 'prague') metaEl.textContent = prague.meta;
+        }
+        return true;
+      } catch (err) {
+        apiEnabled = false;
+        return false;
+      }
     }
 
     // 지구본 도시별 스토리 하이라이트 스팟
@@ -4260,6 +4319,7 @@
       place.liked = !place.liked;
       place.likes += place.liked ? 1 : -1;
       renderStoryFeed();
+      syncApi(`/api/places/${encodeURIComponent(place.id)}/like`, 'POST', { liked: place.liked });
     }
 
     function openCommentSheet(idx) {
@@ -4326,8 +4386,12 @@
       renderCommentDrawerList();
       if (activeCommentContext === 'feed') {
         renderFriendsFeed();
+        const post = FRIENDS_FEED[activeCommentFeedIdx];
+        if (post) syncApi(`/api/feed/${encodeURIComponent(post.id)}/comments`, 'POST', { text });
       } else {
         renderStoryFeed();
+        const place = PLACES[activeCommentPlaceIdx];
+        if (place) syncApi(`/api/places/${encodeURIComponent(place.id)}/comments`, 'POST', { text });
       }
       showToast('댓글이 등록되었습니다');
     }
@@ -4604,6 +4668,7 @@
       renderAllCompanionLists();
       renderActivityFeed();
       showToast(user.following ? `${user.handle} 님을 팔로우합니다` : `${user.handle} 님 팔로우를 취소했습니다`);
+      syncApi('/api/friends/follow', 'POST', { handle: user.handle, userIdx, following: user.following });
     }
 
     function addCompanionTagPrompt() {
@@ -4611,6 +4676,7 @@
       if (place && !place.companions.includes('@seong_hee')) {
         place.companions.push('@seong_hee');
         renderStoryFeed();
+        syncApi(`/api/places/${encodeURIComponent(place.id)}/companions`, 'POST', { handle: '@seong_hee' });
       }
       showToast('@seong_hee 님이 일행 태그에 추가되었습니다');
     }
@@ -4657,6 +4723,7 @@
       document.getElementById('friendSearchBox').classList.remove('open');
       renderAllCompanionLists();
       showToast(`${name} 님을 친구로 추가했습니다`);
+      syncApi('/api/friends', 'POST', { raw });
     }
 
     function renderDmThreads() {
@@ -4686,7 +4753,10 @@
       activeDmThreadId = threadId;
       const thread = DM_THREADS.find((t) => t.id === threadId);
       if (!thread) return;
-      thread.unread = false;
+      if (thread.unread) {
+        thread.unread = false;
+        syncApi(`/api/dm/${encodeURIComponent(threadId)}/read`, 'POST', {});
+      }
       renderDmThreads();
       document.getElementById('dmChatTitle').textContent = `${thread.name}님과의 대화`;
       renderDmChatMessages();
@@ -4723,6 +4793,7 @@
       input.value = '';
       renderDmChatMessages();
       renderDmThreads();
+      syncApi(`/api/dm/${encodeURIComponent(activeDmThreadId)}/messages`, 'POST', { text });
     }
 
     // 풀스크린 스토리 뷰어 & 공유 스튜디오 모달 제어
@@ -4849,6 +4920,7 @@
       renderStoryFeed();
       focusPlace(idx, false);
       showToast('메모 저장됨');
+      syncApi(`/api/places/${encodeURIComponent(place.id)}/memo`, 'POST', { comment: text });
     }
 
     // 3D 공간 패럴랙스 / 로드뷰 / 구글 지도 통합 제어
@@ -5153,6 +5225,7 @@
       item.likes += item.liked ? 1 : -1;
       renderFriendsFeed();
       if (item.liked) showToast(`${item.author}님의 피드에 공감했습니다`);
+      syncApi(`/api/feed/${encodeURIComponent(item.id)}/like`, 'POST', { liked: item.liked });
     }
 
     function openFeedCommentDrawer(idx) {
@@ -5223,6 +5296,7 @@
       if (!p || p.added) return;
       p.selected = !p.selected;
       renderAddPhotoGrid();
+      syncApi(`/api/album/${encodeURIComponent(p.id)}/select`, 'PATCH', { selected: p.selected });
     }
 
     // 실제 기기 사진 업로드 & exifr GPS/날짜 파싱 & 캔버스 AI 분석
@@ -5329,8 +5403,7 @@
         });
 
         const baseName = file.name.replace(/\.[^/.]+$/, '').slice(0, 10) || '기기 사진';
-
-        ALBUM_PHOTOS.unshift({
+        const uploadItem = {
           id: 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
           name: baseName,
           day: 2,
@@ -5348,7 +5421,16 @@
           ],
           selected: true,
           added: false
-        });
+        };
+
+        if (apiEnabled) {
+          const uploaded = await syncApi('/api/photos/upload', 'POST', { ...uploadItem, dataUrl });
+          if (uploaded && uploaded.item) {
+            uploadItem.photo = uploaded.item.photo;
+          }
+        }
+
+        ALBUM_PHOTOS.unshift(uploadItem);
       }
 
       event.target.value = '';
@@ -5391,6 +5473,8 @@
         p.selected = false;
         lastIdx = PLACES.length - 1;
       });
+
+      syncApi('/api/places/from-album', 'POST', { ids: picks.map((p) => p.id) });
 
       const prague = CITIES.find((c) => c.id === 'prague');
       if (prague) {
@@ -5749,6 +5833,19 @@
       initMapScrollSync();
       init3DParallax();
       initAddPhotoSheetDrag();
+      loadStateFromServer().then((synced) => {
+        if (!synced) return;
+        renderStoryBubbles();
+        renderActivityFeed();
+        renderFriendsFeed();
+        renderAllCompanionLists();
+        renderDmThreads();
+        if (mapInstance) {
+          renderGroupFilterBar();
+          renderMapMarkers();
+          renderStoryFeed();
+        }
+      });
     }
 
     if (document.readyState === 'loading') {

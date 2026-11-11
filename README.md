@@ -31,7 +31,8 @@
 
 ## 기술 스택
 
-- **Core**: Single-File `HTML5` / `CSS3` (Zero-Text Minimalism Dark System: `#0A0A0A`, `#141414`, `#1F1F1F`) / `Vanilla JavaScript`
+- **Frontend**: `HTML5` / `CSS3` (Zero-Text Minimalism Dark System: `#0A0A0A`, `#141414`, `#1F1F1F`) / `Vanilla JavaScript`
+- **Backend**: `Node.js` + `Express` (`server.js`), JSON 파일 영구 저장(`data/db.json`) 및 업로드 이미지 로컬 저장(`uploads/`), 정적 호스팅(GitHub Pages) 시 자동 인메모리 폴백
 - **Maps & 3D**: `Globe.gl`, `Leaflet.js` (Esri Dark Gray Canvas), CSS 3D Perspective Parallax
 - **Media & Audio**: `exifr` (EXIF GPS & `DateTimeOriginal` 파싱), `Canvas 2D API` (픽셀 밝기·대비·채도 분석 및 PNG 포스터 렌더링), `Web Audio API` (장소별 사운드)
 
@@ -41,8 +42,24 @@
 
 ```text
 .
-├── index.html    # 단일 파일 실행본 (HTML + CSS + JS)
-└── README.md     # 프로젝트 소개 및 실행 가이드
+├── index.html      # 프론트엔드 단일 앱 (Node.js API 연동 + 정적 폴백)
+├── server.js       # Node.js / Express REST API 및 정적 파일 서버
+├── data/
+│   ├── seed.js     # 초기 데모 데이터 시드
+│   └── db.json     # 서버 실행 시 자동 생성되는 영구 상태 저장소 (gitignore)
+├── uploads/        # 기기 사진 업로드 시 저장되는 이미지 폴더 (gitignore)
+├── package.json    # 의존성 및 실행 스크립트
+└── README.md       # 프로젝트 소개 및 실행 가이드
 ```
 
-별도 빌드나 서버 설치 없이 [`index.html`](./index.html)을 브라우저로 바로 열거나 GitHub Pages 링크로 접속해 실행할 수 있습니다.
+### Node.js 서버로 실행하기 (영구 저장 & 이미지 업로드 활성화)
+
+```bash
+npm install
+npm start
+```
+
+실행 후 브라우저에서 `http://localhost:3000` 에 접속하면 좋아요, 댓글, 메모, 친구 추가/팔로우, DM 메시지, 사진 추가 및 기기 사진 업로드가 `data/db.json`과 `uploads/`에 영구 저장됩니다.
+
+- 초기 데이터로 되돌리려면 `POST /api/reset`을 호출하거나 `data/db.json`을 삭제한 뒤 서버를 재시작하면 됩니다.
+- GitHub Pages([Live Demo](https://sir-sngwn.github.io/yeoul-prototype/))나 `index.html` 단독 실행 환경에서는 `/api/state` 미응답 시 자동으로 내장 정적 모드로 폴백합니다.
