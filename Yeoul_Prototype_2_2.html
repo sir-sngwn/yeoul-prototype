@@ -898,7 +898,17 @@
       }
 
       .add-photo-item.selected {
-        box-shadow: 0 0 0 2px #FFFFFF;
+        box-shadow: none;
+      }
+
+      .add-photo-item.selected::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 16px;
+        border: 2.5px solid #FFFFFF;
+        z-index: 5;
+        pointer-events: none;
       }
 
       .add-photo-item.added img {
@@ -1093,13 +1103,13 @@
         position: absolute;
         top: 44px;
         right: 12px;
-        z-index: 8;
-        width: 136px;
+        z-index: 6;
+        width: 138px;
         padding: 10px 12px;
         border-radius: 14px;
         background: rgba(10, 10, 10, 0.82);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.14);
         box-shadow: 0 10px 28px rgba(0, 0, 0, 0.7);
         display: flex;
@@ -2561,7 +2571,7 @@
         padding: 10px 18px 22px;
         box-shadow: 0 -16px 40px rgba(0, 0, 0, 0.85);
         transform: translateY(100%);
-        transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+        transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
         display: flex;
         flex-direction: column;
         gap: 14px;
@@ -3012,10 +3022,10 @@
             </div>
           </div>
 
-          <!-- 2. 확장 상태: 활동 드로어 -->
+          <!-- 2. 확장 상태: Activity 드로어 -->
           <div class="globe-activity-drawer" id="globeActivityDrawer">
             <div class="globe-activity-head">
-              <h3 class="globe-activity-title">활동</h3>
+              <h3 class="globe-activity-title">Activity</h3>
               <span class="globe-activity-count-badge">4</span>
             </div>
 
@@ -3312,14 +3322,15 @@
            전역 모달 3-1: 사진 추가 (EXIF 자동 군집화 & 기기 업로드) (#addPhotoSheetOverlay)
            =================================================================== -->
       <div class="sheet-overlay" id="addPhotoSheetOverlay" onclick="if(event.target===this)closeAddPhotoSheet()">
-        <div class="bottom-modal-sheet" aria-labelledby="addPhotoSheetTitle">
-          <div class="sheet-Grabber" style="align-self:center;"></div>
+        <div class="bottom-modal-sheet" id="addPhotoModalSheet" aria-labelledby="addPhotoSheetTitle">
+          <div class="sheet-grabber-zone" id="addPhotoGrabberZone" onclick="closeAddPhotoSheet()">
+            <div class="sheet-Grabber"></div>
+          </div>
           <div class="sheet-header-row">
             <h3 class="sheet-header-title" id="addPhotoSheetTitle">사진 (4)</h3>
             <div class="add-photo-header-actions">
               <button type="button" class="btn-device-photo" onclick="document.getElementById('realExifInput').click()">+ 기기 사진</button>
               <input type="file" id="realExifInput" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="handleRealPhotoUpload(event)">
-              <button type="button" class="sheet-header-action" onclick="closeAddPhotoSheet()">닫기</button>
             </div>
           </div>
           <div class="add-photo-grid" id="addPhotoGrid"></div>
@@ -3397,7 +3408,6 @@
       <h2 id="gmapDialogTitle" class="spatial-modal-title">프라하 성</h2>
       <div class="spatial-seg-switch" role="tablist">
         <button type="button" class="spatial-seg-btn active" id="seg3d" data-mode="3d" onclick="switchSpatialMode('3d')">3D</button>
-        <button type="button" class="spatial-seg-btn" id="segStreet" data-mode="street" onclick="switchSpatialMode('street')">로드뷰</button>
         <button type="button" class="spatial-seg-btn" id="segMap" data-mode="map" onclick="switchSpatialMode('map')">지도</button>
       </div>
       <form method="dialog">
@@ -3415,9 +3425,6 @@
         </div>
         <div class="spatial-3d-badge">3D</div>
       </div>
-
-      <!-- [로드뷰] 모드: 구글 스트리트뷰 iframe -->
-      <iframe id="streetviewIframe" class="spatial-iframe" allow="fullscreen" loading="lazy"></iframe>
 
       <!-- [지도] 모드: 구글 지도 iframe -->
       <iframe id="gmapIframe" class="spatial-iframe" loading="lazy"></iframe>
@@ -4867,24 +4874,14 @@
       });
 
       const view3d = document.getElementById('spatial3dView');
-      const streetIframe = document.getElementById('streetviewIframe');
       const mapIframe = document.getElementById('gmapIframe');
       const place = spatialTargetPlace || PLACES[currentPlaceIdx] || PLACES[0];
 
       if (mode === '3d') {
         if (view3d) view3d.style.display = 'flex';
-        if (streetIframe) streetIframe.style.display = 'none';
-        if (mapIframe) mapIframe.style.display = 'none';
-      } else if (mode === 'street') {
-        if (view3d) view3d.style.display = 'none';
-        if (streetIframe) {
-          streetIframe.style.display = 'block';
-          streetIframe.src = `https://maps.google.com/maps?q=&layer=c&cbll=${place.lat},${place.lng}&cbp=11,0,0,0,0&output=svembed`;
-        }
         if (mapIframe) mapIframe.style.display = 'none';
       } else if (mode === 'map') {
         if (view3d) view3d.style.display = 'none';
-        if (streetIframe) streetIframe.style.display = 'none';
         if (mapIframe) {
           mapIframe.style.display = 'block';
           mapIframe.src = `https://maps.google.com/maps?q=${place.lat},${place.lng}&hl=ko&z=16&output=embed`;
@@ -5262,7 +5259,7 @@
 
         // GPS 부재 시 프라하 중심부 인근 스마트 폴백
         if (!lat || !lng) {
-          lat = 50.0870 + (Math.random() - 0.5) * 0.015;
+          lat = 50.0875 + (Math.random() - 0.5) * 0.015;
           lng = 14.4150 + (Math.random() - 0.5) * 0.018;
         }
 
@@ -5397,9 +5394,9 @@
       currentPlaceIdx = lastIdx;
 
       const isOnMap = document.getElementById('screenMap').classList.contains('active');
-      if (!isOnMap) switchTab('map');
 
       setTimeout(() => {
+        if (!isOnMap) executeSwitchTab('map');
         initMap();
         renderGroupFilterBar();
         renderMapMarkers();
@@ -5411,9 +5408,9 @@
           mapInstance.flyTo([place.lat, place.lng], 16, { duration: 1.1 });
         }
         const card = document.getElementById(`storyCard_${lastIdx}`);
-        if (card) setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'center' }), 500);
+        if (card) setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'center' }), 420);
         showToast(`지도에 ${picks.length}곳 추가됨`);
-      }, isOnMap ? 260 : 420);
+      }, 260);
     }
 
     // 공유 카드 -> 1080x1920 PNG (순수 캔버스 벡터 드로잉, 외부 이미지 미사용)
@@ -5614,8 +5611,18 @@
       ctx.closePath();
     }
 
-    // 탭 전환 컨트롤러 (globe, map, album, my)
+    // 탭 전환 컨트롤러 (열려있는 바텀시트 슬라이드 다운 후 전환)
     function switchTab(tabKey) {
+      const openSheets = document.querySelectorAll('.sheet-overlay.open');
+      if (openSheets.length > 0) {
+        openSheets.forEach((s) => s.classList.remove('open'));
+        setTimeout(() => executeSwitchTab(tabKey), 240);
+        return;
+      }
+      executeSwitchTab(tabKey);
+    }
+
+    function executeSwitchTab(tabKey) {
       const mapping = {
         globe: ['screenGlobe', 'tabGlobe'],
         map: ['screenMap', 'tabMap'],
@@ -5698,6 +5705,27 @@
       }, { passive: true });
     }
 
+    // 사진 추가 시트 그랩바 드래그로 닫기
+    function initAddPhotoSheetDrag() {
+      const grabber = document.getElementById('addPhotoGrabberZone');
+      if (!grabber) return;
+      let startY = 0;
+      let active = false;
+      grabber.addEventListener('pointerdown', (e) => {
+        startY = e.clientY;
+        active = true;
+      });
+      window.addEventListener('pointermove', (e) => {
+        if (!active) return;
+        if (e.clientY - startY > 24) {
+          closeAddPhotoSheet();
+          active = false;
+        }
+      });
+      window.addEventListener('pointerup', () => { active = false; });
+      window.addEventListener('pointercancel', () => { active = false; });
+    }
+
     let initialized = false;
     function boot() {
       if (initialized) return;
@@ -5711,6 +5739,7 @@
       renderDmThreads();
       initMapScrollSync();
       init3DParallax();
+      initAddPhotoSheetDrag();
     }
 
     if (document.readyState === 'loading') {
